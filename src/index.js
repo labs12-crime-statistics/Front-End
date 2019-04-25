@@ -1,6 +1,6 @@
 import React from 'react';
 import ReactDOM from 'react-dom';
-import {BrowserRouter as Router, Route, Link, Switch} from 'react-router-dom';
+import {BrowserRouter as Router, Route} from 'react-router-dom';
 import './index.css';
 import * as serviceWorker from './serviceWorker';
 import HomeComponent from './components/HomeComponent';
@@ -9,11 +9,9 @@ import AboutComponent from './components/AboutComponent';
 
 ReactDOM.render(
     <Router>
-        <Switch>
-            <Route exact path="/" render={() => <HomeComponent />} />
-            <Route exact path="/map" render={() => <MapComponent cityid={1} />} />
-            <Route exact path="/about" render={() => <AboutComponent />} />
-        </Switch>
+        <Route exact path="/" render={() => <HomeComponent />} />
+        <Route exact path="/map" render={() => <MapComponent cityid={1} />} />
+        <Route exact path="/about" render={() => <AboutComponent />} />
     </Router>,
 document.getElementById('root'));
 
