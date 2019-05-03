@@ -5,7 +5,7 @@ import {Sunburst} from './SunburstComponent.js';
 import axios from 'axios';
 
 // const be_url = "http://localhost:5000";
-const be_url = "http://localhost:5000";
+const be_url = "https://crimespot-backend.herokuapp.com/";
 
 export default class VisualizeComponent extends Component {
   constructor(props) {
