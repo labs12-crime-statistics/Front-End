@@ -8,6 +8,7 @@ class MapComponent extends Component {
     super(props);
     this.state = {
       googlepolygons: null,
+      zipcodepolygons: null,
       baseloc: null,
       map: <div></div>
     }
@@ -33,7 +34,6 @@ class MapComponent extends Component {
 
     if ((nextProps.mapdata) && (nextProps.paths) && (nextProps.pathids) && (!nextState.googlepolygons)) {
       var polygons = [];
-      console.log(nextProps);
       for (var i = 0; i < nextProps.paths.length; i++) {
         if (nextProps.pathids[i].toString() !== nextProps.blockid) {
           polygons.push(<Polygon
@@ -45,7 +45,7 @@ class MapComponent extends Component {
             strokeWeight={2}
             fillColor={colorMap((nextProps.mapdata[nextProps.pathids[i]] || [0.0,0.0])[1])}
             fillOpacity={0.3}
-            onMouseover={(p,o,e) => {console.log(p.id); o.setOptions({fillOpacity: 0.18, strokeWeight: 6})}}
+            onMouseover={(p,o,e) => {o.setOptions({fillOpacity: 0.18, strokeWeight: 6})}}
             onMouseout={(p,o,e) => o.setOptions({fillOpacity: 0.3, strokeWeight: 2})}
           />);
         } else {
@@ -58,11 +58,22 @@ class MapComponent extends Component {
             strokeWeight={8}
             fillColor={colorMap((nextProps.mapdata[nextProps.pathids[i]] || [0.0,0.0])[1])}
             fillOpacity={0.24}
-            onMouseover={(p,o,e) => {console.log(p.id)}}
           />);
         }
       }
-      this.setState({googlepolygons: polygons});
+      var zipcodePolygons = [];
+      for (i = 0; i < nextProps.zipcodePaths.length; i++) {
+        zipcodePolygons.push(<Polygon
+          id={"zipcode-"+nextProps.zipcodePathids[i].toString()}
+          key={nextProps.zipcodePathids[i]}
+          paths={nextProps.zipcodePaths[i]}
+          strokeColor="#FFFFFF"
+          strokeOpacity={0.8}
+          strokeWeight={10}
+          fillOpacity={0.0}
+        />);
+      }
+      this.setState({googlepolygons: polygons, zipcodepolygons: zipcodePolygons});
     }
 
     if (this.state.baseloc !== nextProps.baseloc) {
@@ -80,6 +91,7 @@ class MapComponent extends Component {
       center={this.state.baseloc}
       zoom={12}
     >
+      {/* {this.state.zipcodepolygons} */ null}
       {this.state.googlepolygons}
     </Map>);
   }
@@ -93,33 +105,83 @@ export default GoogleApiWrapper({
 // Google map style
 const mapStyle = [
   {
+      "featureType": "administrative",
+      "elementType": "all",
       "stylers": [
-          {
-              "hue": "#2c3e50"
-          },
-          {
-              "saturation": 250
-          }
-      ]
-  },
-  {
-      "featureType": "road",
-      "elementType": "geometry",
-      "stylers": [
-          {
-              "lightness": 50
-          },
           {
               "visibility": "simplified"
           }
       ]
   },
   {
-      "featureType": "road",
-      "elementType": "labels",
+      "featureType": "landscape",
+      "elementType": "geometry",
       "stylers": [
           {
-              "visibility": "off"
+              "visibility": "simplified"
+          },
+          {
+              "color": "#fcfcfc"
+          }
+      ]
+  },
+  {
+      "featureType": "poi",
+      "elementType": "geometry",
+      "stylers": [
+          {
+              "visibility": "simplified"
+          },
+          {
+              "color": "#fcfcfc"
+          }
+      ]
+  },
+  {
+      "featureType": "road.highway",
+      "elementType": "geometry",
+      "stylers": [
+          {
+              "visibility": "simplified"
+          },
+          {
+              "color": "#dddddd"
+          }
+      ]
+  },
+  {
+      "featureType": "road.arterial",
+      "elementType": "geometry",
+      "stylers": [
+          {
+              "visibility": "simplified"
+          },
+          {
+              "color": "#dddddd"
+          }
+      ]
+  },
+  {
+      "featureType": "road.local",
+      "elementType": "geometry",
+      "stylers": [
+          {
+              "visibility": "simplified"
+          },
+          {
+              "color": "#eeeeee"
+          }
+      ]
+  },
+  {
+      "featureType": "water",
+      "elementType": "geometry",
+      "stylers": [
+          {
+              "visibility": "simplified"
+          },
+          {
+              "color": "#dddddd"
           }
       ]
   }
