@@ -5,7 +5,19 @@ import {Sunburst} from './SunburstComponent.js';
 import axios from 'axios';
 
 // const be_url = "http://localhost:5000";
-const be_url = "https://crimespot-backend.herokuapp.com";
+const be_url = "http://localhost:5000";
+
+function delay(t, v) {
+  return new Promise(function(resolve) { 
+      setTimeout(resolve.bind(null, v), t)
+  });
+}
+
+Promise.prototype.delay = function(t) {
+   return this.then(function(v) {
+       return delay(t, v);
+   });
+}
 
 export default class VisualizeComponent extends Component {
   constructor(props) {
@@ -39,6 +51,8 @@ export default class VisualizeComponent extends Component {
     this.downloadCityData = this.downloadCityData.bind(this);
     this.getCityShapes = this.getCityShapes.bind(this);
     this.getCityData = this.getCityData.bind(this);
+    this.getDownloadJob = this.getDownloadJob.bind(this);
+    this.getDataJob = this.getDataJob.bind(this);
   }
 
   componentDidMount() {
@@ -79,19 +93,38 @@ export default class VisualizeComponent extends Component {
       params["locdesc2"] = locdescs2.join(",");
       params["locdesc3"] = locdescs3.join(",");
     }
-    new Promise((resolve) => axios({
+
+    var request = {
       url: be_url+"/city/"+this.state.cityId+"/download",
       params: params,
       method: 'GET',
       responseType: 'blob'
-    }).then(function(response) {
-        const url = window.URL.createObjectURL(new Blob([response.data]));
-        const link = document.createElement('a');
-        link.href = url;
-        link.setAttribute('download', 'download.csv');
-        document.body.appendChild(link);
-        link.click();
-      }));
+    };
+
+    this.getDownloadJob(request);
+  }
+
+  getDownloadJob(request) {
+    new Promise((resolve) => axios(request)
+      .then(function(response) {
+        if (response.headers['content-type'] === 'text/csv') {
+          resolve({status: "completed", data: response.data});
+        } else {
+          request.params = {job: response.data.id};
+          resolve({status: "pending", data: request});
+        }
+      }).delay(1000).then(result => {
+        if (result.status === "pending") {
+          this.getDataJob(result.data);
+        } else {
+          const url = window.URL.createObjectURL(new Blob([result.data]));
+          const link = document.createElement('a');
+          link.href = url;
+          link.setAttribute('download', 'download.csv');
+          document.body.appendChild(link);
+          link.click();
+        }
+    }));
   }
 
   getCityShapes() {
@@ -174,48 +207,61 @@ export default class VisualizeComponent extends Component {
     if (params !== {}) {
       request.params = params;
     }
+    this.getDataJob(request);
+  }
+
+  getDataJob(request) {
     new Promise((resolve) => axios(request)
       .then(function(response) {
-        const values = {};
-        response.data.other.forEach(e => {
-          values[e.id] = e.values;
-        });
-        const keys = Object.keys(response.data.main);
-        var blockid = "";
-        for (var i = 0; i < keys.length; i++) {
-          if (keys[i] !== "all") {
-            blockid = keys[i];
-            break;
+        if (response.data.status === 'completed') {
+          const values = {};
+          response.data.result.other.forEach(e => {
+            values[e.id] = e.values;
+          });
+          const keys = Object.keys(response.data.result.main);
+          var blockid = "";
+          for (var i = 0; i < keys.length; i++) {
+            if (keys[i] !== "all") {
+              blockid = keys[i];
+              break;
+            }
           }
+          var data = {values: values, blockid: blockid};
+          data.date = [{id: "all", data: response.data.main.all.values_date}]
+          data.time = [{id: "all", data: response.data.main.all.values_time}]
+          data.dow = [{id: "all", data: response.data.main.all.values_dow}]
+          data.crime_all = response.data.main.all.values_type
+          data.locdesc_all = response.data.main.all.values_locdesc
+          if (blockid !== "") {
+            data.date.push({id: blockid, data: response.data.main[blockid].values_date})
+            data.time.push({id: blockid, data: response.data.main[blockid].values_time})
+            data.dow.push({id: blockid, data: response.data.main[blockid].values_dow})
+            data.crime_block = response.data.main[blockid].values_type
+            data.locdesc_block = response.data.main[blockid].values_locdesc
+          }
+          resolve(data);
+        } else {
+          request.params = {job: response.data.id};
+          resolve({status: "pending", data: request});
         }
-        var data = {values: values, blockid: blockid};
-        data.date = [{id: "all", data: response.data.main.all.values_date}]
-        data.time = [{id: "all", data: response.data.main.all.values_time}]
-        data.dow = [{id: "all", data: response.data.main.all.values_dow}]
-        data.crime_all = response.data.main.all.values_type
-        data.locdesc_all = response.data.main.all.values_locdesc
-        if (blockid !== "") {
-          data.date.push({id: blockid, data: response.data.main[blockid].values_date})
-          data.time.push({id: blockid, data: response.data.main[blockid].values_time})
-          data.dow.push({id: blockid, data: response.data.main[blockid].values_dow})
-          data.crime_block = response.data.main[blockid].values_type
-          data.locdesc_block = response.data.main[blockid].values_locdesc
-        }
-        resolve(data);
-      })).then((result) => {
-        this.setState({
-          dataMap: result.values, 
-          dataDate: result.date,
-          dataTime: result.time,
-          dataBlockId: result.blockid,
-          dataDOTW: result.dow,
-          dataCrimeTypesAll: result.crime_all,
-          dataCrimeTypesBlock: result.crime_block,
-          dataLocDescAll: result.locdesc_all,
-          dataLocDescBlock: result.locdesc_block
-        });
+      })
+  ).delay(1000).then(result => {
+    if (result.status === "pending") {
+      this.getDataJob(result.data);
+    } else {
+      this.setState({
+        dataMap: result.data.values, 
+        dataDate: result.data.date,
+        dataTime: result.data.time,
+        dataBlockId: result.data.blockid,
+        dataDOTW: result.data.dow,
+        dataCrimeTypesAll: result.data.crime_all,
+        dataCrimeTypesBlock: result.data.crime_block,
+        dataLocDescAll: result.data.locdesc_all,
+        dataLocDescBlock: result.data.locdesc_block
       });
-  }
+    }
+  })}
   
   render() {
     return(
