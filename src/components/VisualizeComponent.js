@@ -48,11 +48,26 @@ export default class VisualizeComponent extends Component {
       zipcodePathids: null,
       baseLoc: {lat: 41.8781, lng: -87.6298}
     }
+
+    this.formBlockId = React.createRef();
+    this.formDateStart = React.createRef();
+    this.formDateEnd = React.createRef();
+    this.formTimeStart = React.createRef();
+    this.formTimeEnd = React.createRef();
+    this.formDowM = React.createRef();
+    this.formDowTu = React.createRef();
+    this.formDowW = React.createRef();
+    this.formDowTh = React.createRef();
+    this.formDowF = React.createRef();
+    this.formDowSa = React.createRef();
+    this.formDowSu = React.createRef();
+    
     this.downloadCityData = this.downloadCityData.bind(this);
     this.getCityShapes = this.getCityShapes.bind(this);
     this.getCityData = this.getCityData.bind(this);
     this.getDownloadJob = this.getDownloadJob.bind(this);
     this.getDataJob = this.getDataJob.bind(this);
+    this.paramsFormSubmit = this.paramsFormSubmit.bind(this);
   }
 
   componentDidMount() {
@@ -113,7 +128,7 @@ export default class VisualizeComponent extends Component {
           request.params = {job: response.data.id};
           resolve({status: "pending", data: request});
         }
-      }).delay(1000).then(result => {
+      }).delay(5000).then(result => {
         if (result.status === "pending") {
           this.getDataJob(result.data);
         } else {
@@ -214,11 +229,12 @@ export default class VisualizeComponent extends Component {
     new Promise((resolve) => axios(request)
       .then(function(response) {
         if (response.data.status === 'completed') {
+          var result = JSON.parse(response.data.result);
           const values = {};
-          response.data.result.other.forEach(e => {
+          result.other.forEach(e => {
             values[e.id] = e.values;
           });
-          const keys = Object.keys(response.data.result.main);
+          const keys = Object.keys(result.main);
           var blockid = "";
           for (var i = 0; i < keys.length; i++) {
             if (keys[i] !== "all") {
@@ -227,25 +243,25 @@ export default class VisualizeComponent extends Component {
             }
           }
           var data = {values: values, blockid: blockid};
-          data.date = [{id: "all", data: response.data.main.all.values_date}]
-          data.time = [{id: "all", data: response.data.main.all.values_time}]
-          data.dow = [{id: "all", data: response.data.main.all.values_dow}]
-          data.crime_all = response.data.main.all.values_type
-          data.locdesc_all = response.data.main.all.values_locdesc
+          data.date = [{id: "all", data: result.main.all.values_date}]
+          data.time = [{id: "all", data: result.main.all.values_time}]
+          data.dow = [{id: "all", data: result.main.all.values_dow}]
+          data.crime_all = result.main.all.values_type
+          data.locdesc_all = result.main.all.values_locdesc
           if (blockid !== "") {
-            data.date.push({id: blockid, data: response.data.main[blockid].values_date})
-            data.time.push({id: blockid, data: response.data.main[blockid].values_time})
-            data.dow.push({id: blockid, data: response.data.main[blockid].values_dow})
-            data.crime_block = response.data.main[blockid].values_type
-            data.locdesc_block = response.data.main[blockid].values_locdesc
+            data.date.push({id: blockid, data: result.main[blockid].values_date})
+            data.time.push({id: blockid, data: result.main[blockid].values_time})
+            data.dow.push({id: blockid, data: result.main[blockid].values_dow})
+            data.crime_block = result.main[blockid].values_type
+            data.locdesc_block = result.main[blockid].values_locdesc
           }
-          resolve(data);
+          resolve({status: "completed", data: data});
         } else {
           request.params = {job: response.data.id};
           resolve({status: "pending", data: request});
         }
       })
-  ).delay(1000).then(result => {
+  ).delay(5000).then(result => {
     if (result.status === "pending") {
       this.getDataJob(result.data);
     } else {
@@ -262,6 +278,39 @@ export default class VisualizeComponent extends Component {
       });
     }
   })}
+
+  paramsFormSubmit(e) {
+    var dotw = []
+    if (this.formDowM.checked) {
+      dotw.push("0");
+    }
+    if (this.formDowTu.checked) {
+      dotw.push("1");
+    }
+    if (this.formDowW.checked) {
+      dotw.push("2");
+    }
+    if (this.formDowTh.checked) {
+      dotw.push("3");
+    }
+    if (this.formDowF.checked) {
+      dotw.push("4");
+    }
+    if (this.formDowSa.checked) {
+      dotw.push("5");
+    }
+    if (this.formDowSu.checked) {
+      dotw.push("6");
+    }
+    this.setState({
+      blockid: this.formBlockId.value,
+      startdate: this.formDateStart.value,
+      enddate: this.formDateEnd.value,
+      starttime: this.formTimeStart.value,
+      endtime: this.formTimeEnd.value,
+      dotw: dotw
+    }, () => this.getCityData());
+  }
   
   render() {
     return(
@@ -274,22 +323,22 @@ export default class VisualizeComponent extends Component {
         <div style={{width: "80vw", height: "60vh"}}><Line axisbottom={{"format": "%m/%Y", "orient": "bottom", "tickSize": 5, "tickPadding": 5, "tickRotation": 0, "legend": "Month / Year", "legendOffset": 36, "legendPosition": "middle"}} xscale={{"type": "time", "format": "%m/%Y", "min": "auto", "max": "auto"}} yvalue={"Crime Severity"} data={(this.state.dataDate ? this.state.dataDate : [])} /></div>
         <div style={{width: "80vw", height: "60vh"}}><Line axisbottom={{"format": "%I %p", "orient": "bottom", "tickSize": 5, "tickPadding": 5, "tickRotation": 0, "legend": "Hour of Day", "legendOffset": 36, "legendPosition": "middle"}} xscale={{"type": "time", "format": "%H", "min": "auto", "max": "auto"}} yvalue={"Crime Severity"} data={(this.state.dataTime ? this.state.dataTime : [])} /></div>
         <div style={{width: "80vw", height: "60vh"}}><Line axisbottom={{"orient": "bottom", "tickSize": 5, "tickPadding": 5, "tickRotation": 0, "legend": "Day of Week", "legendOffset": 36, "legendPosition": "middle"}} xscale={{"type": "point"}} yvalue={"Crime Severity"} data={(this.state.dataDOTW ? this.state.dataDOTW : [])} /></div>
-        <form>
-          <input type="number" name="blockid" /><br />
-          <input type="date" name="startdate" /><br />
-          <input type="date" name="enddate" /><br />
-          <input type="number" name="starttime" min="0" max="23" /><br />
-          <input type="number" name="endtime" min="0" max="23" /><br />
-          <input type="checkbox" name="dotw" value="0" /> Monday<br />
-          <input type="checkbox" name="dotw" value="1" /> Tuesday<br />
-          <input type="checkbox" name="dotw" value="2" /> Wednesday<br />
-          <input type="checkbox" name="dotw" value="3" /> Thursday<br />
-          <input type="checkbox" name="dotw" value="4" /> Friday<br />
-          <input type="checkbox" name="dotw" value="5" /> Saturday<br />
-          <input type="checkbox" name="dotw" value="6" /> Sunday<br />
+        <form onSubmit={this.paramsFormSubmit}>
+          <input ref={this.formBlockId} type="number" name="blockid" /><br />
+          <input ref={this.formDateStart} type="date" name="startdate" /><br />
+          <input ref={this.formDateEnd} type="date" name="enddate" /><br />
+          <input ref={this.formTimeStart} type="number" name="starttime" min="0" max="23" /><br />
+          <input ref={this.formTimeEnd} type="number" name="endtime" min="0" max="23" /><br />
+          <input ref={this.formDowM} type="checkbox" name="dotw" value="0" /> Monday<br />
+          <input ref={this.formDowTu} type="checkbox" name="dotw" value="1" /> Tuesday<br />
+          <input ref={this.formDowW} type="checkbox" name="dotw" value="2" /> Wednesday<br />
+          <input ref={this.formDowTh} type="checkbox" name="dotw" value="3" /> Thursday<br />
+          <input ref={this.formDowF} type="checkbox" name="dotw" value="4" /> Friday<br />
+          <input ref={this.formDowSa} type="checkbox" name="dotw" value="5" /> Saturday<br />
+          <input ref={this.formDowSu} type="checkbox" name="dotw" value="6" /> Sunday<br />
           <input type="submit" value="data" /> Get Data<br />
-          <input type="submit" value="download" /> Download<br />
         </form>
+        <a onClick={() => this.downloadCityData()}> Download</a>
       </div>
     );
   }
