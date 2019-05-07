@@ -66,6 +66,7 @@ export default class VisualizeComponent extends Component {
     this.getCityShapes = this.getCityShapes.bind(this);
     this.getCityData = this.getCityData.bind(this);
     this.getDataJob = this.getDataJob.bind(this);
+    this.getDownloadJob = this.getDownloadJob.bind(this);
     this.paramsFormSubmit = this.paramsFormSubmit.bind(this);
   }
 
@@ -119,27 +120,48 @@ export default class VisualizeComponent extends Component {
       var request = {
         url: be_url+"/city/"+this.state.cityId+"/download",
         params: JSON.parse(JSON.stringify(params)),
-        method: 'GET',
-        responseType: 'blob'
+        method: 'GET'
       };
-      promises.push(new Promise((resolve) => axios(request)
-        .then(function(response) {
-          resolve(response.data);
-        })
-      ));
+      promises.push(request);
     }
-      
-    Promise.all(promises).then(result => {
-        console.log(result);
-        const url = window.URL.createObjectURL(new Blob(result));
-        const link = document.createElement('a');
-        link.href = url;
-        link.setAttribute('download', 'download.csv');
-        document.body.appendChild(link);
-        link.click();
-      }
+    
+    const promiseSerial = funcs =>
+      funcs.reduce((promise, func) =>
+        promise.then(result => func().then(Array.prototype.concat.bind(result))),
+        Promise.resolve([]));
+
+    var funcs = promises.map(req => () => new Promise((resp) => this.getDownloadJob(req, resp)));
+         
+    promiseSerial(funcs).then(console.log.bind(console)
+      // result => {
+      //   console.log(result);
+      //   const url = window.URL.createObjectURL(new Blob(result));
+      //   const link = document.createElement('a');
+      //   link.href = url;
+      //   link.setAttribute('download', 'download.csv');
+      //   document.body.appendChild(link);
+      //   link.click();
+      // }
     );
   }
+
+  getDownloadJob(request, resp) {
+    new Promise((resolve) => axios(request)
+      .then(function(response) {
+        if (response.data.status === 'completed') {
+          resolve({status: "completed", data: response.data.result});
+        } else {
+          request.params = {job: response.data.id};
+          resolve({status: "pending", data: request});
+        }
+      })
+  ).delay(5000).then(result => {
+    if (result.status === "pending") {
+      this.getDataJob(result.data);
+    } else {
+      resp(result.data);
+    }
+  })}
 
   getCityShapes() {
     new Promise((resolve) => axios.get(be_url+"/city/"+this.state.cityId+"/shapes")
