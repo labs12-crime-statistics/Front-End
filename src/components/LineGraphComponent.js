@@ -43,6 +43,7 @@ export const Line = ( {data, axisbottom, xscale, yvalue} ) => (
       enableDotLabel={false}
       dotLabel="y"
       dotLabelYOffset={-12}
+      enableDots={false}
       animate={true}
       motionStiffness={90}
       motionDamping={15}
