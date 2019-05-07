@@ -1,7 +1,7 @@
 import React, {Component} from 'react';
 import MapComponent from './MapComponent.js';
-import {Line} from './LineGraphComponent.js';
-import {Sunburst} from './SunburstComponent.js';
+import Line from './LineGraphComponent.js';
+import Sunburst from './SunburstComponent.js';
 import axios from 'axios';
 
 // const be_url = "http://localhost:5000";
@@ -24,7 +24,7 @@ export default class VisualizeComponent extends Component {
     super(props);
     this.state = {
       cityId: 1,
-      blockid: null,
+      blockid: "",
       startdate: "",
       enddate: "",
       starttime: "",
@@ -67,6 +67,7 @@ export default class VisualizeComponent extends Component {
     this.getCityData = this.getCityData.bind(this);
     this.getDataJob = this.getDataJob.bind(this);
     this.getDownloadJob = this.getDownloadJob.bind(this);
+    this.combineDownloadData = this.combineDownloadData.bind(this);
     this.paramsFormSubmit = this.paramsFormSubmit.bind(this);
   }
 
@@ -77,12 +78,12 @@ export default class VisualizeComponent extends Component {
 
   downloadCityData() {
     var params = {};
-    if (this.state.startdate !== "") {
+    if (this.state.startdate !== null) {
       params["sdt"] = this.state.startdate.toString();
     } else {
       params["sdt"] = "01/01/2001";
     }
-    if (this.state.enddate !== "") {
+    if (this.state.enddate !== null) {
       params["edt"] = this.state.enddate.toString();
     } else {
       params["edt"] = "01/01/2020";
@@ -115,14 +116,14 @@ export default class VisualizeComponent extends Component {
     var promises = [];
     var sdt_arr = params["sdt"].split("/");
     var edt_arr = params["edt"].split("/");
-    for (var i = parseInt(sdt_arr[sdt_arr.length-1]); i < 1 + parseInt(edt_arr[edt_arr.length-1]); i++) {
+    for (i = parseInt(sdt_arr[sdt_arr.length-1]); i < 1 + parseInt(edt_arr[edt_arr.length-1]); i++) {
       params["cyear"] = i.toString();
       var request = {
         url: be_url+"/city/"+this.state.cityId+"/download",
         params: JSON.parse(JSON.stringify(params)),
         method: 'GET'
       };
-      promises.push(request);
+      promises.push(JSON.parse(JSON.stringify(request)));
     }
     
     const promiseSerial = funcs =>
@@ -132,17 +133,17 @@ export default class VisualizeComponent extends Component {
 
     var funcs = promises.map(req => () => new Promise((resp) => this.getDownloadJob(req, resp)));
          
-    promiseSerial(funcs).then(console.log.bind(console)
-      // result => {
-      //   console.log(result);
-      //   const url = window.URL.createObjectURL(new Blob(result));
-      //   const link = document.createElement('a');
-      //   link.href = url;
-      //   link.setAttribute('download', 'download.csv');
-      //   document.body.appendChild(link);
-      //   link.click();
-      // }
-    );
+    promiseSerial(funcs).then(this.combineDownloadData.bind(this));
+  }
+
+  combineDownloadData(res) {
+    var out = "city,state,country,datetime,latitude,longitude,category,location_key1,location_key2,location_key3\n"+res.join("");
+    const url = window.URL.createObjectURL(new Blob([out]));
+    const link = document.createElement('a');
+    link.href = url;
+    link.setAttribute('download', 'download.csv');
+    document.body.appendChild(link);
+    link.click();
   }
 
   getDownloadJob(request, resp) {
@@ -155,12 +156,13 @@ export default class VisualizeComponent extends Component {
           resolve({status: "pending", data: request});
         }
       })
-  ).delay(5000).then(result => {
-    if (result.status === "pending") {
-      this.getDataJob(result.data);
-    } else {
-      resp(result.data);
-    }
+    ).delay(5000).then(result => {
+      if (result.status === "pending") {
+        var data = JSON.parse(JSON.stringify(result.data));
+        this.getDownloadJob(data, resp);
+      } else {
+        resp(result.data);
+      }
   })}
 
   getCityShapes() {
@@ -205,7 +207,7 @@ export default class VisualizeComponent extends Component {
 
   getCityData() {
     var params = {};
-    if (this.state.blockid !== null) {
+    if (this.state.blockid !== "") {
       params["blockid"] = this.state.blockid;
     }
     if (this.state.startdate !== "") {
@@ -300,35 +302,37 @@ export default class VisualizeComponent extends Component {
     }
   })}
 
-  paramsFormSubmit(e) {
+  paramsFormSubmit() {
     var dotw = []
-    if (this.formDowM.checked) {
+    if (this.formDowM.current.checked) {
       dotw.push("0");
     }
-    if (this.formDowTu.checked) {
+    if (this.formDowTu.current.checked) {
       dotw.push("1");
     }
-    if (this.formDowW.checked) {
+    if (this.formDowW.current.checked) {
       dotw.push("2");
     }
-    if (this.formDowTh.checked) {
+    if (this.formDowTh.current.checked) {
       dotw.push("3");
     }
-    if (this.formDowF.checked) {
+    if (this.formDowF.current.checked) {
       dotw.push("4");
     }
-    if (this.formDowSa.checked) {
+    if (this.formDowSa.current.checked) {
       dotw.push("5");
     }
-    if (this.formDowSu.checked) {
+    if (this.formDowSu.current.checked) {
       dotw.push("6");
     }
+    var stimes = this.formDateStart.current.value.split("-");
+    var etimes = this.formDateEnd.current.value.split("-");
     this.setState({
-      blockid: this.formBlockId.value,
-      startdate: this.formDateStart.value,
-      enddate: this.formDateEnd.value,
-      starttime: this.formTimeStart.value,
-      endtime: this.formTimeEnd.value,
+      blockid: this.formBlockId.current.value,
+      startdate: [stimes[1], stimes[2], stimes[0]].join("/"),
+      enddate: [etimes[1], etimes[2], etimes[0]].join("/"),
+      starttime: this.formTimeStart.current.value,
+      endtime: this.formTimeEnd.current.value,
       dotw: dotw
     }, () => this.getCityData());
   }
@@ -353,7 +357,7 @@ export default class VisualizeComponent extends Component {
         <div style={{width: "80vw", height: "60vh"}}><Line axisbottom={{"format": "%m/%Y", "orient": "bottom", "tickSize": 5, "tickPadding": 5, "tickRotation": 0, "legend": "Month / Year", "legendOffset": 36, "legendPosition": "middle"}} xscale={{"type": "time", "format": "%m/%Y", "min": "auto", "max": "auto"}} yvalue={"Crime Severity"} data={(this.state.dataDate ? this.state.dataDate : [])} /></div>
         <div style={{width: "80vw", height: "60vh"}}><Line axisbottom={{"format": d => (d%24 < 12 ? ((d+23)%12+1).toString()+' AM' : ((d+23)%12+1).toString()+' PM'), "orient": "bottom", "tickSize": 5, "tickPadding": 5, "tickRotation": 0, "legend": "Hour of Day", "legendOffset": 36, "legendPosition": "middle", "tickValues": [0, 3, 6, 9, 12, 15, 18, 21, 24]}} xscale={{"type": "linear", "min": -1, "max": 25}} yvalue={"Crime Severity"} data={(this.state.dataTime ? this.state.dataTime : [])} /></div>
         <div style={{width: "80vw", height: "60vh"}}><Line axisbottom={{"format": d => dow[d%7], "orient": "bottom", "tickSize": 5, "tickPadding": 5, "tickRotation": 0, "legend": "Day of Week", "legendOffset": 36, "legendPosition": "middle", "tickValues": [0,1,2,3,4,5,6]}} xscale={{"type": "linear", "min": -1, "max": 7}} yvalue={"Crime Severity"} data={(this.state.dataDOTW ? this.state.dataDOTW : [])} /></div>
-        <form onSubmit={this.paramsFormSubmit}>
+        <form>
           <input ref={this.formBlockId} type="number" name="blockid" /><br />
           <input ref={this.formDateStart} type="date" name="startdate" /><br />
           <input ref={this.formDateEnd} type="date" name="enddate" /><br />
@@ -366,8 +370,8 @@ export default class VisualizeComponent extends Component {
           <input ref={this.formDowF} type="checkbox" name="dotw" value="4" /> Friday<br />
           <input ref={this.formDowSa} type="checkbox" name="dotw" value="5" /> Saturday<br />
           <input ref={this.formDowSu} type="checkbox" name="dotw" value="6" /> Sunday<br />
-          <input type="submit" value="data" /> Get Data<br />
         </form>
+        <a onClick={() => this.paramsFormSubmit()}> Reload Data</a>
         <a onClick={() => this.downloadCityData()}> Download</a>
       </div>
     );

@@ -31,8 +31,8 @@ class MapComponent extends Component {
       if (g.length < 2) {g = "0" + g}
       return("#"+r+g+"00");
     }
-
-    if ((nextProps.mapdata) && (nextProps.paths) && (nextProps.pathids) && (!nextState.googlepolygons)) {
+    
+    if ((nextProps.mapdata) && (nextProps.paths) && (nextProps.pathids) && (this.props !== nextProps)) {
       var polygons = [];
       for (var i = 0; i < nextProps.paths.length; i++) {
         if (nextProps.pathids[i].toString() !== nextProps.blockid) {
