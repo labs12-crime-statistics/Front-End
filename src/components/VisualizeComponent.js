@@ -65,7 +65,6 @@ export default class VisualizeComponent extends Component {
     this.downloadCityData = this.downloadCityData.bind(this);
     this.getCityShapes = this.getCityShapes.bind(this);
     this.getCityData = this.getCityData.bind(this);
-    this.getDownloadJob = this.getDownloadJob.bind(this);
     this.getDataJob = this.getDataJob.bind(this);
     this.paramsFormSubmit = this.paramsFormSubmit.bind(this);
   }
@@ -78,10 +77,14 @@ export default class VisualizeComponent extends Component {
   downloadCityData() {
     var params = {};
     if (this.state.startdate !== "") {
-      params["sdt"] = this.state.startdate;
+      params["sdt"] = this.state.startdate.toString();
+    } else {
+      params["sdt"] = "01/01/2001";
     }
     if (this.state.enddate !== "") {
-      params["edt"] = this.state.enddate;
+      params["edt"] = this.state.enddate.toString();
+    } else {
+      params["edt"] = "01/01/2020";
     }
     if (this.state.starttime !== "") {
       params["stime"] = this.state.starttime;
@@ -108,38 +111,34 @@ export default class VisualizeComponent extends Component {
       params["locdesc2"] = locdescs2.join(",");
       params["locdesc3"] = locdescs3.join(",");
     }
-
-    var request = {
-      url: be_url+"/city/"+this.state.cityId+"/download",
-      params: params,
-      method: 'GET',
-      responseType: 'blob'
-    };
-
-    this.getDownloadJob(request);
-  }
-
-  getDownloadJob(request) {
-    new Promise((resolve) => axios(request)
-      .then(function(response) {
-        if (response.headers['content-type'] === 'text/csv') {
-          resolve({status: "completed", data: response.data});
-        } else {
-          request.params = {job: response.data.id};
-          resolve({status: "pending", data: request});
-        }
-      }).delay(5000).then(result => {
-        if (result.status === "pending") {
-          this.getDataJob(result.data);
-        } else {
-          const url = window.URL.createObjectURL(new Blob([result.data]));
-          const link = document.createElement('a');
-          link.href = url;
-          link.setAttribute('download', 'download.csv');
-          document.body.appendChild(link);
-          link.click();
-        }
-    }));
+    var promises = [];
+    var sdt_arr = params["sdt"].split("/");
+    var edt_arr = params["edt"].split("/");
+    for (var i = parseInt(sdt_arr[sdt_arr.length-1]); i < 1 + parseInt(edt_arr[edt_arr.length-1]); i++) {
+      params["cyear"] = i.toString();
+      var request = {
+        url: be_url+"/city/"+this.state.cityId+"/download",
+        params: JSON.parse(JSON.stringify(params)),
+        method: 'GET',
+        responseType: 'blob'
+      };
+      promises.push(new Promise((resolve) => axios(request)
+        .then(function(response) {
+          resolve(response.data);
+        })
+      ));
+    }
+      
+    Promise.all(promises).then(result => {
+        console.log(result);
+        const url = window.URL.createObjectURL(new Blob(result));
+        const link = document.createElement('a');
+        link.href = url;
+        link.setAttribute('download', 'download.csv');
+        document.body.appendChild(link);
+        link.click();
+      }
+    );
   }
 
   getCityShapes() {
@@ -313,6 +312,15 @@ export default class VisualizeComponent extends Component {
   }
   
   render() {
+    var dow = {
+      0: "Mo",
+      1: "Tu",
+      2: "We",
+      3: "Th",
+      4: "Fr",
+      5: "Sa",
+      6: "Su"
+    };
     return(
       <div>
         <div style={{height: "100vh"}}><MapComponent blockid={this.state.blockid} baseloc={this.state.baseLoc} mapdata={this.state.dataMap} paths={this.state.paths} pathids={this.state.pathids} zipcodePaths={this.state.zipcodePaths} zipcodePathids={this.state.zipcodePathids} /></div>
@@ -321,8 +329,8 @@ export default class VisualizeComponent extends Component {
         {this.state.dataLocDescAll ? <div style={{width: "80vw", height: "60vh"}}><Sunburst data={this.state.dataLocDescAll} /></div> : null}
         {this.state.dataLocDescBlock ? <div style={{width: "80vw", height: "60vh"}}><Sunburst data={this.state.dataLocDescBlock} /></div> : null}
         <div style={{width: "80vw", height: "60vh"}}><Line axisbottom={{"format": "%m/%Y", "orient": "bottom", "tickSize": 5, "tickPadding": 5, "tickRotation": 0, "legend": "Month / Year", "legendOffset": 36, "legendPosition": "middle"}} xscale={{"type": "time", "format": "%m/%Y", "min": "auto", "max": "auto"}} yvalue={"Crime Severity"} data={(this.state.dataDate ? this.state.dataDate : [])} /></div>
-        <div style={{width: "80vw", height: "60vh"}}><Line axisbottom={{"format": "%I %p", "orient": "bottom", "tickSize": 5, "tickPadding": 5, "tickRotation": 0, "legend": "Hour of Day", "legendOffset": 36, "legendPosition": "middle"}} xscale={{"type": "time", "format": "%H", "min": "auto", "max": "auto"}} yvalue={"Crime Severity"} data={(this.state.dataTime ? this.state.dataTime : [])} /></div>
-        <div style={{width: "80vw", height: "60vh"}}><Line axisbottom={{"orient": "bottom", "tickSize": 5, "tickPadding": 5, "tickRotation": 0, "legend": "Day of Week", "legendOffset": 36, "legendPosition": "middle"}} xscale={{"type": "point"}} yvalue={"Crime Severity"} data={(this.state.dataDOTW ? this.state.dataDOTW : [])} /></div>
+        <div style={{width: "80vw", height: "60vh"}}><Line axisbottom={{"format": d => (d%24 < 12 ? ((d+23)%12+1).toString()+' AM' : ((d+23)%12+1).toString()+' PM'), "orient": "bottom", "tickSize": 5, "tickPadding": 5, "tickRotation": 0, "legend": "Hour of Day", "legendOffset": 36, "legendPosition": "middle", "tickValues": [0, 3, 6, 9, 12, 15, 18, 21, 24]}} xscale={{"type": "linear", "min": -1, "max": 25}} yvalue={"Crime Severity"} data={(this.state.dataTime ? this.state.dataTime : [])} /></div>
+        <div style={{width: "80vw", height: "60vh"}}><Line axisbottom={{"format": d => dow[d%7], "orient": "bottom", "tickSize": 5, "tickPadding": 5, "tickRotation": 0, "legend": "Day of Week", "legendOffset": 36, "legendPosition": "middle", "tickValues": [0,1,2,3,4,5,6]}} xscale={{"type": "linear", "min": -1, "max": 7}} yvalue={"Crime Severity"} data={(this.state.dataDOTW ? this.state.dataDOTW : [])} /></div>
         <form onSubmit={this.paramsFormSubmit}>
           <input ref={this.formBlockId} type="number" name="blockid" /><br />
           <input ref={this.formDateStart} type="date" name="startdate" /><br />
