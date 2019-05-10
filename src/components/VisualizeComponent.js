@@ -1,8 +1,10 @@
 import React, {Component} from 'react';
-import MapComponent from './MapComponent.js';
-import Line from './LineGraphComponent.js';
-import Sunburst from './SunburstComponent.js';
+import Search from './PlacesSearchBarComponent';
+import MapComponent from './MapComponent';
+import Line from './LineGraphComponent';
+import Sunburst from './SunburstComponent';
 import axios from 'axios';
+import LoadingLogo from './LoadingLogo';
 
 // const be_url = "http://localhost:5000";
 const be_url = "https://crimespot-backend.herokuapp.com";
@@ -23,6 +25,9 @@ export default class VisualizeComponent extends Component {
   constructor(props) {
     super(props);
     this.state = {
+      city: "",
+      cities: [],
+      showPredictions: false,
       cityId: 1,
       blockid: "",
       startdate: "",
@@ -32,6 +37,15 @@ export default class VisualizeComponent extends Component {
       dotw: [],
       crimetypes: [],
       locdescs: [],
+      dataPredictionBlocks: [],
+      dataPredictionAll: [],
+      dataPredictionDatesFormatted: [],
+      dataPredictionDatesInt: [],
+      dataPredictionTime: [],
+      dataPredictionDate: [],
+      dataPredictionDOW: [],
+      dataPredictionMap: [],
+      dataPredictionSelectedDatesFormatted: [],
       dataMap: null,
       dataDate: null,
       dataTime: null,
@@ -46,10 +60,11 @@ export default class VisualizeComponent extends Component {
       pathids: null,
       zipcodePaths: null,
       zipcodePathids: null,
-      baseLoc: {lat: 41.8781, lng: -87.6298}
+      baseLoc: {lat: 41.8781, lng: -87.6298},
+      startLoading: true,
+      finishLoading: false
     }
 
-    this.formBlockId = React.createRef();
     this.formDateStart = React.createRef();
     this.formDateEnd = React.createRef();
     this.formTimeStart = React.createRef();
@@ -63,6 +78,12 @@ export default class VisualizeComponent extends Component {
     this.formDowSu = React.createRef();
     
     this.downloadCityData = this.downloadCityData.bind(this);
+    this.getPredictions = this.getPredictions.bind(this);
+    this.showPredictions = this.showPredictions.bind(this);
+    this.getCities = this.getCities.bind(this);
+    this.changeCity = this.changeCity.bind(this);
+    this.selectBlock = this.selectBlock.bind(this);
+    this.selectPlace = this.selectPlace.bind(this);
     this.getCityShapes = this.getCityShapes.bind(this);
     this.getCityData = this.getCityData.bind(this);
     this.getDataJob = this.getDataJob.bind(this);
@@ -72,8 +93,202 @@ export default class VisualizeComponent extends Component {
   }
 
   componentDidMount() {
-    this.getCityShapes();
-    this.getCityData();
+    this.getCities();
+  }
+
+  getCities() {
+    new Promise(resolve => axios({
+        url: be_url+"/cities",
+        method: 'GET'
+      }).then(response => {
+        var cities = [];
+        for (var i = 0; i < response.data.cities.length; i++) {
+          cities.push(<a className="dropdown-item" id={"cityid-"+response.data.cities[i].id.toString()} key={response.data.cities[i].id.toString()} onClick={this.changeCity}>{response.data.cities[i].string}</a>);
+        }
+        resolve({cities:cities, data: response.data.cities});
+      })
+    ).then(result => {
+      this.setState({
+        city: result.data[0].string,
+        cityId: result.data[0].id,
+        cities: result.cities
+      }, () => {
+        this.getCityShapes();
+        this.getCityData();
+      });
+    });
+  }
+
+  getPredictions() {
+    new Promise(resolve => axios({
+      url: be_url+"/city/"+this.state.cityId+"/predict",
+      method: 'GET'
+    }).then(response => {
+      resolve(response.data);
+    })).then(result => {
+      this.setState({
+        showPredictions: false,
+        dataPredictionBlocks: result.prediction,
+        dataPredictionDatesInt: result.allDatesInt,
+        dataPredictionDatesFormatted: result.allDatesFormatted,
+        dataPredictionAll: result.predictionAll
+      }, () => {this.showPredictions()});
+    });
+  }
+
+  showPredictions() {
+    var indexes = [[0,0],[0,1,2,3,4,5,6],[0,23]]
+    var datevals = this.state.startdate.split("-")
+    var sdt = 2000*12+1-1;
+    if (datevals.length === 3) {
+      if ((datevals[0] !== "") && (datevals[2] !== "")) {
+        sdt = parseInt(datevals[0])+parseInt(datevals[2])*12-1
+      }
+    }
+    datevals = this.state.enddate.split("-")
+    var edt = 2100*12+1-1;
+    if (datevals.length === 3) {
+      if ((datevals[0] !== "") && (datevals[2] !== "")) {
+        edt = parseInt(datevals[0])+parseInt(datevals[2])*12-1
+      }
+    }
+    for (var i = 0; i < this.state.dataPredictionDatesInt.length; i++) {
+      if (this.state.dataPredictionDatesInt[i] >= sdt) {
+        indexes[0][0] = i;
+        break;
+      }
+    }
+    for (i = this.state.dataPredictionDatesInt.length-1; i > -1; i++) {
+      if (this.state.dataPredictionDatesInt[i] <= edt) {
+        indexes[0][1] = i;
+        break;
+      }
+    }
+    if (this.state.starttime) {
+      indexes[2][0] = parseInt(this.state.starttime);
+    }
+    if (this.state.endtime) {
+      indexes[2][1] = parseInt(this.state.endtime);
+    }
+    if (this.state.dotw.length > 0) {
+      indexes[1] = this.state.dotw.map(x => parseInt(x));
+    }
+    var formatDates = this.state.dataPredictionDatesFormatted.slice(indexes[0][0], indexes[0][1]);
+    var allDate = [];
+    var allTime = [];
+    var allDOW = [];
+    for (i = indexes[0][0]; i < indexes[0][1] + 1; i++) {
+      var month = 0.0;
+      for (var j = 0; j < indexes[1].length; j++) {
+        for (var k = indexes[2][0]; k < indexes[2][1]+1; k++) {
+          month += this.state.dataPredictionAll[i][j][k];
+        }
+      }
+      allDate.push({"x": this.state.dataPredictionDatesFormatted[i], "y": (month * (24 * 7) / (indexes[1].length * (1 + indexes[2][1] - indexes[2][0])))**0.1});
+    }
+    for (k = 0; k < 24; k++) {
+      month = 0.0;
+      for (j = 0; j < indexes[1].length; j++) {
+        for (i = indexes[0][0]; i < indexes[0][1] + 1; i++) {
+          month += this.state.dataPredictionAll[i][j][k];
+        }
+      }
+      allTime.push({"x": this.state.dataPredictionDatesFormatted[i], "y": (month * (24 * 7) / (indexes[1].length * 24))**0.1});
+    }
+    for (j = 0; j < 7; j++) {
+      month = 0.0;
+      for (i = indexes[0][0]; i < indexes[0][1] + 1; i++) {
+        for (k = indexes[2][0]; k < indexes[2][1]+1; k++) {
+          month += this.state.dataPredictionAll[i][j][k];
+        }
+      }
+      allDOW.push({"x": this.state.dataPredictionDatesFormatted[i], "y": (month * (24 * 7) / (7 * (1 + indexes[2][1] - indexes[2][0])))**0.1});
+    }
+    var blockMap = {};
+    for (var b in this.state.dataPredictionBlocks) {
+      var months = [];
+      for (i = indexes[0][0]; i < indexes[0][1] + 1; i++) {
+        month = 0.0;
+        for (j = 0; j < indexes[1].length; j++) {
+          for (k = indexes[2][0]; k < indexes[2][1]+1; k++) {
+            month += this.state.dataPredictionBlocks[b][i][j][k];
+          }
+        }
+        months.push({"x": this.state.dataPredictionDatesFormatted[i], "y": (month * (24 * 7) / (indexes[1].length * (1 + indexes[2][1] - indexes[2][0])))**0.1});
+      }
+      blockMap[b] = months;
+    }
+    allDate = [{id: "Pred : All", data: allDate}];
+    allTime = [{id: "Pred : All", data: allTime}];
+    allDOW = [{id: "Pred : All", data: allDOW}];
+    if (this.state.blockid !== "") {
+      var blockid = parseInt(this.state.blockid);
+      var blockDate = [];
+      var blockTime = [];
+      var blockDOW = [];
+      for (i = indexes[0][0]; i < indexes[0][1] + 1; i++) {
+        month = 0.0;
+        for (j = 0; j < indexes[1].length; j++) {
+          for (k = indexes[2][0]; k < indexes[2][1]+1; k++) {
+            month += this.state.dataPredictionBlocks[blockid][i][j][k];
+          }
+        }
+        blockDate.push({"x": this.state.dataPredictionDatesFormatted[i], "y": (month * (24 * 7) / (indexes[1].length * (1 + indexes[2][1] - indexes[2][0])))**0.1});
+      }
+      for (k = 0; k < 24; k++) {
+        month = 0.0;
+        for (j = 0; j < indexes[1].length; j++) {
+          for (i = indexes[0][0]; i < indexes[0][1] + 1; i++) {
+            month += this.state.dataPredictionBlocks[blockid][i][j][k];
+          }
+        }
+        blockTime.push({"x": this.state.dataPredictionDatesFormatted[i], "y": (month * (24 * 7) / (indexes[1].length * 24))**0.1});
+      }
+      for (j = 0; j < 7; j++) {
+        month = 0.0;
+        for (i = indexes[0][0]; i < indexes[0][1] + 1; i++) {
+          for (k = indexes[2][0]; k < indexes[2][1]+1; k++) {
+            month += this.state.dataPredictionBlocks[blockid][i][j][k];
+          }
+        }
+        blockDOW.push({"x": this.state.dataPredictionDatesFormatted[i], "y": (month * (24 * 7) / (7 * (1 + indexes[2][1] - indexes[2][0])))**0.1});
+      }
+      allDate.push({id: "Pred : Block "+blockid.toString(), data: blockDate});
+      allTime.push({id: "Pred : Block "+blockid.toString(), data: blockTime});
+      allDOW.push({id: "Pred : Block "+blockid.toString(), data: blockDOW});
+    }
+    this.setState({
+      dataPredictionSelectedDatesFormatted: formatDates,
+      dataPredictionTime: allTime,
+      dataPredictionDate: allDate,
+      dataPredictionDOW: allDOW,
+      showPredictions: true
+    });
+  }
+
+  changeCity(e) {
+    this.setState({city: e.target.innerHTML, cityId: parseInt(e.target.id.split("-")[1])}, () => {
+      this.getCityShapes();
+      this.getCityData();
+    })
+  }
+
+  selectBlock(e) {
+    this.setState({blockid: e});
+  }
+
+  selectPlace(loc) {
+    new Promise(resolve => axios({
+      url: be_url+"/cities",
+      method: 'GET',
+      params: loc
+    }).then(response => {
+      resolve(response.data);
+    })).then(result => {
+      this.setState({
+        blockid: result.blockid.toString()
+      });
+    });
   }
 
   downloadCityData() {
@@ -246,6 +461,7 @@ export default class VisualizeComponent extends Component {
       request.params = params;
     }
     this.getDataJob(request);
+    this.setState({startLoading: true});
   }
 
   getDataJob(request) {
@@ -266,15 +482,15 @@ export default class VisualizeComponent extends Component {
             }
           }
           var data = {values: values, blockid: blockid};
-          data.date = [{id: "all", data: result.main.all.values_date}]
-          data.time = [{id: "all", data: result.main.all.values_time}]
-          data.dow = [{id: "all", data: result.main.all.values_dow}]
+          data.date = [{id: "All", data: result.main.all.values_date}]
+          data.time = [{id: "All", data: result.main.all.values_time}]
+          data.dow = [{id: "All", data: result.main.all.values_dow}]
           data.crime_all = result.main.all.values_type
           data.locdesc_all = result.main.all.values_locdesc
           if (blockid !== "") {
-            data.date.push({id: blockid, data: result.main[blockid].values_date})
-            data.time.push({id: blockid, data: result.main[blockid].values_time})
-            data.dow.push({id: blockid, data: result.main[blockid].values_dow})
+            data.date.push({id: blockid.toString(), data: result.main[blockid].values_date})
+            data.time.push({id: blockid.toString(), data: result.main[blockid].values_time})
+            data.dow.push({id: blockid.toString(), data: result.main[blockid].values_dow})
             data.crime_block = result.main[blockid].values_type
             data.locdesc_block = result.main[blockid].values_locdesc
           }
@@ -297,7 +513,8 @@ export default class VisualizeComponent extends Component {
         dataCrimeTypesAll: result.data.crime_all,
         dataCrimeTypesBlock: result.data.crime_block,
         dataLocDescAll: result.data.locdesc_all,
-        dataLocDescBlock: result.data.locdesc_block
+        dataLocDescBlock: result.data.locdesc_block,
+        finishLoading: true
       });
     }
   })}
@@ -328,16 +545,17 @@ export default class VisualizeComponent extends Component {
     var stimes = this.formDateStart.current.value.split("-");
     var etimes = this.formDateEnd.current.value.split("-");
     this.setState({
-      blockid: this.formBlockId.current.value,
       startdate: [stimes[1], stimes[2], stimes[0]].join("/"),
       enddate: [etimes[1], etimes[2], etimes[0]].join("/"),
       starttime: this.formTimeStart.current.value,
       endtime: this.formTimeEnd.current.value,
-      dotw: dotw
-    }, () => this.getCityData());
+      dotw: dotw,
+      showPredictions: false
+    }, () => {this.getCityData(); this.showPredictions()});
   }
   
   render() {
+    console.log(this.state.dataPredictionDate);
     var dow = {
       0: "Mo",
       1: "Tu",
@@ -349,30 +567,42 @@ export default class VisualizeComponent extends Component {
     };
     return(
       <div>
-        <div style={{height: "100vh"}}><MapComponent blockid={this.state.blockid} baseloc={this.state.baseLoc} mapdata={this.state.dataMap} paths={this.state.paths} pathids={this.state.pathids} zipcodePaths={this.state.zipcodePaths} zipcodePathids={this.state.zipcodePathids} /></div>
-        {this.state.dataCrimeTypesAll ? <div style={{width: "80vw", height: "60vh"}}><Sunburst data={this.state.dataCrimeTypesAll} /></div> : null}
-        {this.state.dataCrimeTypesBlock ? <div style={{width: "80vw", height: "60vh"}}><Sunburst data={this.state.dataCrimeTypesBlock} /></div> : null}
-        {this.state.dataLocDescAll ? <div style={{width: "80vw", height: "60vh"}}><Sunburst data={this.state.dataLocDescAll} /></div> : null}
-        {this.state.dataLocDescBlock ? <div style={{width: "80vw", height: "60vh"}}><Sunburst data={this.state.dataLocDescBlock} /></div> : null}
-        <div style={{width: "80vw", height: "60vh"}}><Line axisbottom={{"format": "%m/%Y", "orient": "bottom", "tickSize": 5, "tickPadding": 5, "tickRotation": 0, "legend": "Month / Year", "legendOffset": 36, "legendPosition": "middle"}} xscale={{"type": "time", "format": "%m/%Y", "min": "auto", "max": "auto"}} yvalue={"Crime Severity"} data={(this.state.dataDate ? this.state.dataDate : [])} /></div>
-        <div style={{width: "80vw", height: "60vh"}}><Line axisbottom={{"format": d => (d%24 < 12 ? ((d+23)%12+1).toString()+' AM' : ((d+23)%12+1).toString()+' PM'), "orient": "bottom", "tickSize": 5, "tickPadding": 5, "tickRotation": 0, "legend": "Hour of Day", "legendOffset": 36, "legendPosition": "middle", "tickValues": [0, 3, 6, 9, 12, 15, 18, 21, 24]}} xscale={{"type": "linear", "min": -1, "max": 25}} yvalue={"Crime Severity"} data={(this.state.dataTime ? this.state.dataTime : [])} /></div>
-        <div style={{width: "80vw", height: "60vh"}}><Line axisbottom={{"format": d => dow[d%7], "orient": "bottom", "tickSize": 5, "tickPadding": 5, "tickRotation": 0, "legend": "Day of Week", "legendOffset": 36, "legendPosition": "middle", "tickValues": [0,1,2,3,4,5,6]}} xscale={{"type": "linear", "min": -1, "max": 7}} yvalue={"Crime Severity"} data={(this.state.dataDOTW ? this.state.dataDOTW : [])} /></div>
-        <form>
-          <input ref={this.formBlockId} type="number" name="blockid" /><br />
-          <input ref={this.formDateStart} type="date" name="startdate" /><br />
-          <input ref={this.formDateEnd} type="date" name="enddate" /><br />
-          <input ref={this.formTimeStart} type="number" name="starttime" min="0" max="23" /><br />
-          <input ref={this.formTimeEnd} type="number" name="endtime" min="0" max="23" /><br />
-          <input ref={this.formDowM} type="checkbox" name="dotw" value="0" /> Monday<br />
-          <input ref={this.formDowTu} type="checkbox" name="dotw" value="1" /> Tuesday<br />
-          <input ref={this.formDowW} type="checkbox" name="dotw" value="2" /> Wednesday<br />
-          <input ref={this.formDowTh} type="checkbox" name="dotw" value="3" /> Thursday<br />
-          <input ref={this.formDowF} type="checkbox" name="dotw" value="4" /> Friday<br />
-          <input ref={this.formDowSa} type="checkbox" name="dotw" value="5" /> Saturday<br />
-          <input ref={this.formDowSu} type="checkbox" name="dotw" value="6" /> Sunday<br />
-        </form>
-        <a onClick={() => this.paramsFormSubmit()}> Reload Data</a>
-        <a onClick={() => this.downloadCityData()}> Download</a>
+        {this.state.startLoading ? <div className="row-nomarg overlay align-items-center text-center"><div className="col-12"><LoadingLogo style={{width: "300px", height: "300px"}} finish={this.state.finishLoading} endLoading={() => this.setState({startLoading: false, finishLoading: false})} /></div></div> : null}
+        <div className="col-md-10 offset-1">
+          <Search city={this.state.city} cities={this.state.cities} selectPlace={this.selectBlockByAddress} />
+          <div className="row"><div style={{width: "100%", height: "80vh"}}><MapComponent height={"80vh"} blockid={this.state.blockid} baseloc={this.state.baseLoc} mapdata={this.state.dataMap} paths={this.state.paths} pathids={this.state.pathids} zipcodePaths={this.state.zipcodePaths} zipcodePathids={this.state.zipcodePathids} selectBlock={this.selectBlock} /></div></div>
+          <div className="row">
+            <div className="card date-data-chart"><div className="card-img-top" style={{width: "100%", height: "60vh"}}><Line axisbottom={{"format": "%m/%Y", "orient": "bottom", "tickSize": 5, "tickPadding": 5, "tickRotation": 0, "legend": "Month / Year", "legendOffset": 36, "legendPosition": "middle"}} xscale={{"type": "time", "format": "%m/%Y", "min": "auto", "max": "auto"}} yvalue={"Crime Severity"} data={(this.state.dataDate ? (this.state.showPredictions && this.state.dataPredictionDate.length > 0 ? this.state.dataDate.concat(this.state.dataPredictionDate) : this.state.dataDate) : [])} /></div><div className="card-body"><h5 className="card-title">Date (Month/Year)</h5></div></div>
+          </div>
+          <div className="row">
+            <div className="chart-card-columns">
+              <div className="card"><div className="card-img-top" style={{width: "100%", height: "60vh"}}><Sunburst data={(this.state.dataCrimeTypesAll ? this.state.dataCrimeTypesAll : {})} /></div><div className="card-body"><h5 className="card-title">Crime Types - All</h5></div></div>
+              {this.state.blockid !== "" ? <div className="card"><div className="card-img-top" style={{width: "100%", height: "60vh"}}><Sunburst data={(this.state.dataCrimeTypesBlock ? this.state.dataCrimeTypesBlock : {})} /></div><div className="card-body"><h5 className="card-title">{"Crime Types - Block "+this.state.blockid}</h5></div></div> : null}
+              <div className="card"><div className="card-img-top" style={{width: "100%", height: "60vh"}}><Sunburst data={(this.state.dataLocDescAll ? this.state.dataLocDescAll : {})} /></div><div className="card-body"><h5 className="card-title">Location Description - All</h5></div></div>
+              {this.state.blockid !== "" ? <div className="card"><div className="card-img-top" style={{width: "100%", height: "60vh"}}><Sunburst data={(this.state.dataLocDescBlock ? this.state.dataLocDescBlock : {})} /></div><div className="card-body"><h5 className="card-title">{"Location Description - Block "+this.state.blockid}</h5></div></div> : null}
+              <div className="card"><div className="card-img-top" style={{width: "100%", height: "60vh"}}><Line axisbottom={{"format": d => (d%24 < 12 ? ((d+23)%12+1).toString()+' AM' : ((d+23)%12+1).toString()+' PM'), "orient": "bottom", "tickSize": 5, "tickPadding": 5, "tickRotation": 0, "legend": "Hour of Day", "legendOffset": 36, "legendPosition": "middle", "tickValues": [0, 3, 6, 9, 12, 15, 18, 21, 24]}} xscale={{"type": "linear", "min": -1, "max": 25}} yvalue={"Crime Severity"} data={(this.state.dataTime ? this.state.dataTime : [])} /></div><div className="card-body"><h5 className="card-title">Hour of the Day</h5></div></div>
+              <div className="card"><div className="card-img-top" style={{width: "100%", height: "60vh"}}><Line axisbottom={{"format": d => dow[d%7], "orient": "bottom", "tickSize": 5, "tickPadding": 5, "tickRotation": 0, "legend": "Day of Week", "legendOffset": 36, "legendPosition": "middle", "tickValues": [0,1,2,3,4,5,6]}} xscale={{"type": "linear", "min": -1, "max": 7}} yvalue={"Crime Severity"} data={(this.state.dataDOTW ? this.state.dataDOTW : [])} /></div><div className="card-body"><h5 className="card-title">Day of the Week</h5></div></div>
+            </div>
+          </div>
+          <div className="row">
+            <form>
+              <input ref={this.formDateStart} type="date" name="startdate" /><br />
+              <input ref={this.formDateEnd} type="date" name="enddate" /><br />
+              <input ref={this.formTimeStart} type="number" name="starttime" min="0" max="23" /><br />
+              <input ref={this.formTimeEnd} type="number" name="endtime" min="0" max="23" /><br />
+              <input ref={this.formDowM} type="checkbox" name="dotw" value="0" /> Monday<br />
+              <input ref={this.formDowTu} type="checkbox" name="dotw" value="1" /> Tuesday<br />
+              <input ref={this.formDowW} type="checkbox" name="dotw" value="2" /> Wednesday<br />
+              <input ref={this.formDowTh} type="checkbox" name="dotw" value="3" /> Thursday<br />
+              <input ref={this.formDowF} type="checkbox" name="dotw" value="4" /> Friday<br />
+              <input ref={this.formDowSa} type="checkbox" name="dotw" value="5" /> Saturday<br />
+              <input ref={this.formDowSu} type="checkbox" name="dotw" value="6" /> Sunday<br />
+            </form>
+          </div>
+          <div className="row"><button className="btn btn-primary" type="button" onClick={() => this.paramsFormSubmit()}>Reload Data</button></div>
+          <div className="row"><button className="btn btn-primary" type="button" onClick={() => this.downloadCityData()}>Download</button></div>
+          <div className="row"><button className="btn btn-primary" type="button" onClick={() => this.getPredictions()}>Get Predictions</button></div>
+        </div>
       </div>
     );
   }

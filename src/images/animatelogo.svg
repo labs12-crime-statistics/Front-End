@@ -1,0 +1,96 @@
+<svg
+   id="svg8"
+   version="1.1"
+   viewBox="0 0 100 115.3904"
+   height="115.3904mm"
+   width="100mm">
+  <defs
+     id="defs2" />
+  <g
+     transform="translate(-5.9638138,-162.71968)"
+     id="layer1">
+    <g
+       id="lock-shaft">
+      <rect
+         style="opacity:1;fill:#54f59a;fill-opacity:1;stroke:#00eb64;stroke-width:0;stroke-miterlimit:4;stroke-dasharray:none;stroke-opacity:1;paint-order:normal"
+         id="rect819"
+         height="19.999998"
+         x="43.463814"
+         y="195.61009"
+         width="4.999999" />
+    </g>
+    <path
+       d="M 103.25386,247.64247 56.029051,274.98306 8.7390098,247.75547 8.6737721,193.1873 55.898576,165.84671 103.18862,193.0743 Z"
+       id="path829"
+       style="opacity:1;fill:none;fill-opacity:1;stroke:#96f7c0;stroke-width:5.41618204;stroke-miterlimit:4;stroke-dasharray:none;stroke-opacity:1;paint-order:normal" />
+    <g
+       id="lock-body">
+      <circle
+         style="opacity:1;fill:none;fill-opacity:1;stroke:#54f59a;stroke-width:5;stroke-miterlimit:4;stroke-dasharray:none;stroke-opacity:1;paint-order:normal"
+         id="path815"
+         cx="55.816998"
+         cy="233.97409"
+         r="20" />
+      <g
+         id="lock-spinner">
+        <circle
+           r="5"
+           cy="233.97409"
+           cx="55.816998"
+           id="path817"
+           style="opacity:1;fill:none;fill-opacity:1;stroke:#96f7c0;stroke-width:10;stroke-miterlimit:4;stroke-dasharray:none;stroke-opacity:1;paint-order:normal" />
+        <circle
+           r="2"
+           cy="227.97409"
+           cx="55.816814"
+           id="path905"
+           style="opacity:1;fill:#54f59a;fill-opacity:1;stroke:none;stroke-width:5;stroke-miterlimit:4;stroke-dasharray:none;stroke-opacity:1;paint-order:normal" />
+        <circle
+           r="2"
+           cy="239.97409"
+           cx="55.816814"
+           id="path905-0"
+           style="opacity:1;fill:#54f59a;fill-opacity:1;stroke:none;stroke-width:5;stroke-miterlimit:4;stroke-dasharray:none;stroke-opacity:1;paint-order:normal" />
+        <circle
+           r="2"
+           cy="230.97409"
+           cx="60.744812"
+           id="path905-0-1"
+           style="opacity:1;fill:#54f59a;fill-opacity:1;stroke:none;stroke-width:5;stroke-miterlimit:4;stroke-dasharray:none;stroke-opacity:1;paint-order:normal" />
+        <circle
+           r="2"
+           cy="236.97409"
+           cx="60.744812"
+           id="path905-0-1-6"
+           style="opacity:1;fill:#54f59a;fill-opacity:1;stroke:none;stroke-width:5;stroke-miterlimit:4;stroke-dasharray:none;stroke-opacity:1;paint-order:normal" />
+        <circle
+           r="2"
+           cy="236.97409"
+           cx="50.888813"
+           id="path905-0-1-1"
+           style="opacity:1;fill:#54f59a;fill-opacity:1;stroke:none;stroke-width:5;stroke-miterlimit:4;stroke-dasharray:none;stroke-opacity:1;paint-order:normal" />
+        <circle
+           r="2"
+           cy="230.97409"
+           cx="50.888813"
+           id="path905-0-1-8"
+           style="opacity:1;fill:#54f59a;fill-opacity:1;stroke:none;stroke-width:5;stroke-miterlimit:4;stroke-dasharray:none;stroke-opacity:1;paint-order:normal" />
+      </g>
+    </g>
+    <g
+       id="lock-loop">
+      <path
+         style="opacity:1;fill:none;fill-opacity:1;stroke:#54f59a;stroke-width:5;stroke-miterlimit:4;stroke-dasharray:none;stroke-opacity:1;paint-order:normal"
+         id="path821"
+         d="m 65.963814,-195.71008 a 10,10 0 0 1 -5,8.66025 10,10 0 0 1 -10,0 10,10 0 0 1 -5,-8.66025"
+         transform="scale(1,-1)" />
+      <rect
+         style="opacity:1;fill:#54f59a;fill-opacity:1;stroke:#00eb64;stroke-width:0;stroke-miterlimit:4;stroke-dasharray:none;stroke-opacity:1;paint-order:normal"
+         id="rect819-7"
+         height="9.999999"
+         x="63.463814"
+         y="195.61009"
+         width="4.9999995" />
+    </g>
+  </g>
+</svg>

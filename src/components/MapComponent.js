@@ -12,6 +12,12 @@ class MapComponent extends Component {
       baseloc: null,
       map: <div></div>
     }
+
+    this.selectBlock = this.selectBlock.bind(this);
+  }
+
+  selectBlock(e) {
+    this.props.selectBlock(e.id.split("-")[1]);
   }
 
   componentWillUpdate(nextProps, nextState) {
@@ -47,6 +53,7 @@ class MapComponent extends Component {
             fillOpacity={0.3}
             onMouseover={(p,o,e) => {o.setOptions({fillOpacity: 0.18, strokeWeight: 6})}}
             onMouseout={(p,o,e) => o.setOptions({fillOpacity: 0.3, strokeWeight: 2})}
+            onClick={this.selectBlock}
           />);
         } else {
           polygons.push(<Polygon
@@ -90,6 +97,7 @@ class MapComponent extends Component {
       className={'map'}
       center={this.state.baseloc}
       zoom={12}
+      style={{height: this.props.height}}
     >
       {/* {this.state.zipcodepolygons} */ null}
       {this.state.googlepolygons}
