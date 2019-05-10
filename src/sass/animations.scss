@@ -1,0 +1,103 @@
+@mixin keyframes( $animationName )
+{
+    @-webkit-keyframes #{$animationName} {
+        @content;
+    }
+    @-moz-keyframes #{$animationName} {
+        @content;
+    }
+    @-o-keyframes #{$animationName} {
+        @content;
+    }
+    @keyframes #{$animationName} {
+        @content;
+    }
+}
+
+.logo-lock-spinner {
+  animation: spinner 6s linear infinite;
+  transform-origin: center;
+  transform-box: fill-box;
+}
+
+@include keyframes(spinner)
+{
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.logo-lock-close-top {
+  animation: close-top 1.5s linear;
+  animation-fill-mode: forwards;
+  transform-origin: center;
+  transform-box: fill-box;
+}
+
+.logo-lock-close-bottom {
+  animation: close-bottom 1.5s linear;
+  animation-fill-mode: forwards;
+  transform-origin: center;
+  transform-box: fill-box;
+}
+
+.logo-lock-close-shaft {
+  animation: close-shaft 1.5s linear;
+  animation-fill-mode: forwards;
+  transform-origin: center;
+  transform-box: fill-box;
+}
+
+@include keyframes(close-top)
+{
+  from {
+    transform: translateY(0mm);
+  }
+  to {
+    transform: translateY(1.5mm);
+  }
+}
+
+@include keyframes(close-bottom)
+{
+  from {
+    transform: translateY(0mm);
+  }
+  to {
+    transform: translateY(-1.5mm);
+  }
+}
+
+@include keyframes(close-shaft)
+{
+  from {
+    transform:
+      translateY(0mm)
+      scaleY(1.0);
+  }
+  to {
+    transform:
+      translateY(-0.25mm)
+      scaleY(0.5);
+  }
+}
+
+.logo-lock-fade {
+  animation: fade-lock 1s linear;
+  animation-fill-mode: forwards;
+  transform-origin: center;
+  transform-box: fill-box;
+}
+
+@include keyframes(fade-lock)
+{
+  from {
+    opacity: 1.0;
+  }
+  to {
+    opacity: 0.0;
+  }
+}

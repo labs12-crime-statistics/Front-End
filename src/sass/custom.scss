@@ -1,0 +1,52 @@
+@import 'node_modules/bootstrap/scss/functions';
+@import 'node_modules/bootstrap/scss/variables';
+@import 'node_modules/bootstrap/scss/mixins';
+
+$theme-colors: (
+  "primary": #0074d9,
+  "danger": #ff4136
+);
+
+.chart-card-columns {
+  @extend .card-columns;
+  column-count: 1 !important;
+  @include media-breakpoint-up(lg) {
+    column-count: 2 !important;
+  }
+}
+
+.map {
+  position: relative !important;
+}
+
+.date-data-chart {
+  width: 100%;
+}
+
+.row-nomarg {
+  @extend .row;
+  margin: 0px !important;
+}
+
+.row {
+  margin: 25px;
+}
+
+.places-searchbar {
+  width: 100% !important;
+}
+
+.overlay {
+  height: 100%;
+  width: 100%;
+  position: fixed;
+  z-index: 1000;
+  left: 0;
+  top: 0;
+  background-color: rgb(255,255,255);
+  background-color: rgba(255,255,255, 0.7);
+  overflow-x: hidden;
+  transition: 0.5s;
+}
+
+@import 'node_modules/bootstrap/scss/bootstrap';
