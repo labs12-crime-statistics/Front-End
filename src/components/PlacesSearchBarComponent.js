@@ -1,12 +1,10 @@
 import React, { Component } from 'react';
-import Script from 'react-load-script';
 import uuidv4 from 'uuid/v4';
 
 class Search extends Component {
   constructor(props) {
     super(props);
     this.state = {
-      apiKey: 'AIzaSyAiSsYgrWa71hZoeEEKaZZ2SB4nDOJxLsI',
       googleMapsClient: null,
       uuid: uuidv4(),
       showCities: false,
@@ -41,7 +39,6 @@ class Search extends Component {
 
   displayPredictions(predictions, status) {
     if (predictions) {
-      console.log(predictions);
       var places = [];
       var citylength = this.props.city.split(",").length;
       for (var i = 0; i < predictions.length; i++) {
@@ -69,8 +66,7 @@ class Search extends Component {
         sessiontoken: this.state.uuid
       };
 
-      /*global google*/
-      var service = new google.maps.places.AutocompleteService();
+      var service = new this.props.google.maps.places.AutocompleteService();
       service.getQueryPredictions(options, this.displayPredictions);
     } else {
       this.setState({places: []});
@@ -79,10 +75,7 @@ class Search extends Component {
 
   handlePlace(e) {
     const request = {'placeId': e.target.id};
-    console.log(request);
-    /*global google*/
-    const geocoder = new google.maps.Geocoder();
-    console.log(geocoder);
+    const geocoder = new this.props.google.maps.Geocoder();
     geocoder.geocode(request, this.handlePlaceDetails);
     this.setState({places: [], showPlaces: false});
     this.searchBarField.current.value = "";
@@ -91,9 +84,6 @@ class Search extends Component {
   render() {
     return (
       <div className="row">
-        <Script
-          url={"https://maps.googleapis.com/maps/api/js?key="+this.state.apiKey}
-        />
         <div className="col-12">
           <div className="row-nomarg">
             <div className="input-group mb-3 places-searchbar">

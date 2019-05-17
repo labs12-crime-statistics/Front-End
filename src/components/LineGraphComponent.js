@@ -12,8 +12,8 @@ export default class Line extends Component {
           data={this.props.data}
           margin={{
               "top": 50,
-              "right": 110,
-              "bottom": 50,
+              "right": 20,
+              "bottom": 80,
               "left": 60
           }}
           xScale={this.props.xscale}
@@ -46,6 +46,8 @@ export default class Line extends Component {
           dotBorderColor={{
               "from": "color"
           }}
+          tooltip={this.props.tooltip}
+          enableSlices="x"
           enableDotLabel={false}
           dotLabel="y"
           dotLabelYOffset={-12}
@@ -55,14 +57,14 @@ export default class Line extends Component {
           motionDamping={15}
           legends={[
             {
-              "anchor": "bottom-right",
-              "direction": "column",
+              "anchor": "bottom",
+              "direction": "row",
               "justify": false,
-              "translateX": 100,
-              "translateY": 0,
+              "translateX": 20,
+              "translateY": 70,
               "itemsSpacing": 0,
               "itemDirection": "left-to-right",
-              "itemWidth": 80,
+              "itemWidth": 120,
               "itemHeight": 20,
               "itemOpacity": 0.75,
               "symbolSize": 12,
