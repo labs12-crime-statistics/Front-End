@@ -4,12 +4,14 @@ import {BrowserRouter as Router, Route} from 'react-router-dom';
 import './sass/custom.scss';
 import './sass/animations.scss';
 import * as serviceWorker from './serviceWorker';
+import Navbar from './components/NavBarComponent';
 import HomeComponent from './components/HomeComponent';
 import AboutComponent from './components/AboutComponent';
 import VisualizeComponent from './components/VisualizeComponent';
 
 ReactDOM.render(
     <Router>
+        <Navbar />
         <Route exact path="/" render={() => <HomeComponent />} />
         <Route exact path="/map" render={() => <VisualizeComponent cityid={1} />} />
         <Route exact path="/about" render={() => <AboutComponent />} />

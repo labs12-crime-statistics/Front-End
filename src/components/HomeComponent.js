@@ -1,5 +1,5 @@
 import React, {Component} from 'react';
-import LoadingLogo from './LoadingLogo';
+import { Link } from 'react-router-dom';
 
 export default class HomeComponent extends Component {
   constructor(props) {
@@ -9,11 +9,19 @@ export default class HomeComponent extends Component {
       finishLoading: false
     }
   }
+
+  componentDidMount() {
+    document.title = 'SafeSpot';
+  }
+
   render() {
     return(
-      <div>
-        <LoadingLogo style={{width: "300px", height: "300px"}} finish={this.state.finishLoading} endLoading={() => this.setState({startLoading: false, finishLoading: false})} />
-        <a onClick={() => this.setState({finishLoading: true})}>Finish Loading</a>
+      <div clssName="col-10">
+        <div className="row align-items-center text-center">
+          <div className="col-12">
+            <Link className="btn btn-primary" to="/map">Get Started</Link>
+          </div>
+        </div>
       </div>
     );
   }

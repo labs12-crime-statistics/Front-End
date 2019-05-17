@@ -1,10 +1,17 @@
+import 'rc-slider/assets/index.css';
+import 'rc-tooltip/assets/bootstrap.css';
 import React, {Component} from 'react';
+import Slider, { Range } from 'rc-slider';
 import Search from './PlacesSearchBarComponent';
 import MapComponent from './MapComponent';
 import Line from './LineGraphComponent';
 import Sunburst from './SunburstComponent';
 import axios from 'axios';
-import LoadingLogo from './LoadingLogo';
+import LoadingLogo from './LoadingLogoComponent';
+import {ReactComponent as ChartIcon} from '../images/chart.svg';
+import {ReactComponent as DownloadIcon} from '../images/download.svg';
+import {ReactComponent as ReloadIcon} from '../images/refresh.svg';
+import {ReactComponent as AreaIcon} from '../images/areas.svg';
 
 // const be_url = "http://localhost:5000";
 const be_url = "https://crimespot-backend.herokuapp.com";
@@ -21,22 +28,76 @@ Promise.prototype.delay = function(t) {
    });
 }
 
+const loadGoogleMaps = (callback) => {
+  const existingScript = document.getElementById('googleMaps');
+
+  if (!existingScript) {
+    const script = document.createElement('script');
+    script.src = 'https://maps.googleapis.com/maps/api/js?key=AIzaSyAiSsYgrWa71hZoeEEKaZZ2SB4nDOJxLsI&libraries=places';
+    script.id = 'googleMaps';
+    document.body.appendChild(script);
+
+    script.onload = () => {
+      if (callback) callback();
+    };
+  }
+
+  if (existingScript && callback) callback();
+};
+
+class LoadButton extends Component {
+  constructor(props) {
+    super(props);
+    this.state = {
+      showButton: true
+    }
+    this.clickButton = this.clickButton.bind(this);
+  }
+
+  clickButton() {
+    this.setState({showButton: false});
+    this.props.loadData();
+  }
+
+  render() {
+    return(<div className="row-nomarg align-items-center text-center" style={{height: "100%", width: "100%"}}>
+      {this.state.showButton ?
+        <div className="col-12"><button className="btn btn-primary" style={{height: "100px", width: "100px", borderRadius: "50%", margin: "20px"}} type="button" onClick={this.clickButton} ><ReloadIcon height="48px" width="48px" style={{fill: "#FFFFFF"}} /></button></div> :
+        <div className="col-12"><LoadingLogo finish={this.props.finishLoading} endLoading={this.props.onFinish} style={this.props.logoStyle} /></div>
+      }
+    </div>)
+  }
+}
+
 export default class VisualizeComponent extends Component {
   constructor(props) {
     super(props);
     this.state = {
+      google: null,
       city: "",
       cities: [],
       showPredictions: false,
       cityId: 1,
       blockid: "",
+      nextBlockid: "",
       startdate: "",
       enddate: "",
-      starttime: "",
-      endtime: "",
+      starttime: 0,
+      endtime: 23,
       dotw: [],
       crimetypes: [],
       locdescs: [],
+      lowLocations: [],
+      highLocations: [],
+      address: null,
+      nextAddress: null,
+      nextStartdate: "",
+      nextEnddate: "",
+      nextStarttime: "",
+      nextEndtime: "",
+      nextDotw: [],
+      nextCrimetypes: [],
+      nextLocdescs: [],
       dataPredictionBlocks: [],
       dataPredictionAll: [],
       dataPredictionDatesFormatted: [],
@@ -46,36 +107,51 @@ export default class VisualizeComponent extends Component {
       dataPredictionDOW: [],
       dataPredictionMap: [],
       dataPredictionSelectedDatesFormatted: [],
-      dataMap: null,
-      dataDate: null,
-      dataTime: null,
-      dataBlockId: null,
-      dataDOTW: null,
-      dataCrimeTypesAll: null,
-      dataCrimeTypesBlock: null,
-      dataLocDescAll: null,
-      dataLocDescBlock: null,
-      address: null,
+      mapDate: 0,
+      dataMap: {},
+      dataTimeline: [],
+      dataDate: [],
+      dataTime: [],
+      dataDOTW: [],
+      dataCrimeTypesAll: [],
+      dataCrimeTypesBlock: [],
+      dataLocDescAll: [],
+      dataLocDescBlock: [],
+      crimeAllShow: false,
+      crimeBlockShow: false,
+      locAllShow: false,
+      locBlockShow: false,
+      timeShow: false,
+      dowShow: false,
+      crimeAllDataLoaded: false,
+      crimeBlockDataLoaded: false,
+      locAllDataLoaded: false,
+      locBlockDataLoaded: false,
+      timeDataLoaded: false,
+      dowDataLoaded: false,
       paths: null,
       pathids: null,
       zipcodePaths: null,
       zipcodePathids: null,
       baseLoc: {lat: 41.8781, lng: -87.6298},
       startLoading: true,
-      finishLoading: false
+      finishLoading: false,
+      showZipcodes: false,
+      formDateStart: "2001-01-01",
+      formDateEnd: "2030-01-01",
+      formDowM: true,
+      formDowTu: true,
+      formDowW: true,
+      formDowTh: true,
+      formDowF: true,
+      formDowSa: true,
+      formDowSu: true,
+      formTimeReverse: false,
+      formTimeStart: 0,
+      formTimeEnd: 23
     }
 
-    this.formDateStart = React.createRef();
-    this.formDateEnd = React.createRef();
-    this.formTimeStart = React.createRef();
-    this.formTimeEnd = React.createRef();
-    this.formDowM = React.createRef();
-    this.formDowTu = React.createRef();
-    this.formDowW = React.createRef();
-    this.formDowTh = React.createRef();
-    this.formDowF = React.createRef();
-    this.formDowSa = React.createRef();
-    this.formDowSu = React.createRef();
+    this.currMapSlider = React.createRef();
     
     this.downloadCityData = this.downloadCityData.bind(this);
     this.getPredictions = this.getPredictions.bind(this);
@@ -90,10 +166,19 @@ export default class VisualizeComponent extends Component {
     this.getDownloadJob = this.getDownloadJob.bind(this);
     this.combineDownloadData = this.combineDownloadData.bind(this);
     this.paramsFormSubmit = this.paramsFormSubmit.bind(this);
+    this.loadedMaps = this.loadedMaps.bind(this);
+
+    loadGoogleMaps(this.loadedMaps);
   }
 
   componentDidMount() {
+    document.title = 'SafeSpot - Map';
     this.getCities();
+  }
+
+  loadedMaps() {
+    /*global google*/
+    this.setState({google: google});
   }
 
   getCities() {
@@ -114,12 +199,13 @@ export default class VisualizeComponent extends Component {
         cities: result.cities
       }, () => {
         this.getCityShapes();
-        this.getCityData();
+        this.getCityData("");
       });
     });
   }
 
   getPredictions() {
+    this.setState({startLoading: true});
     new Promise(resolve => axios({
       url: be_url+"/city/"+this.state.cityId+"/predict",
       method: 'GET'
@@ -131,12 +217,16 @@ export default class VisualizeComponent extends Component {
         dataPredictionBlocks: result.prediction,
         dataPredictionDatesInt: result.allDatesInt,
         dataPredictionDatesFormatted: result.allDatesFormatted,
-        dataPredictionAll: result.predictionAll
+        dataPredictionAll: result.predictionAll,
+        finishLoading: true
       }, () => {this.showPredictions()});
     });
   }
 
   showPredictions() {
+    this.setState({
+      showPredictions: false
+    });
     var indexes = [[0,0],[0,1,2,3,4,5,6],[0,23]]
     var datevals = this.state.startdate.split("-")
     var sdt = 2000*12+1-1;
@@ -184,7 +274,7 @@ export default class VisualizeComponent extends Component {
           month += this.state.dataPredictionAll[i][j][k];
         }
       }
-      allDate.push({"x": this.state.dataPredictionDatesFormatted[i], "y": (month * (24 * 7) / (indexes[1].length * (1 + indexes[2][1] - indexes[2][0])))**0.1});
+      allDate.push({"x": this.state.dataPredictionDatesFormatted[i], "y": (month * (24 * 7)**3 / (indexes[1].length * (1 + indexes[2][1] - indexes[2][0])))**0.1});
     }
     for (k = 0; k < 24; k++) {
       month = 0.0;
@@ -221,8 +311,8 @@ export default class VisualizeComponent extends Component {
     allDate = [{id: "Pred : All", data: allDate}];
     allTime = [{id: "Pred : All", data: allTime}];
     allDOW = [{id: "Pred : All", data: allDOW}];
-    if (this.state.blockid !== "") {
-      var blockid = parseInt(this.state.blockid);
+    if (this.state.nextBlockid !== "") {
+      var blockid = parseInt(this.state.nextBlockid);
       var blockDate = [];
       var blockTime = [];
       var blockDOW = [];
@@ -233,7 +323,7 @@ export default class VisualizeComponent extends Component {
             month += this.state.dataPredictionBlocks[blockid][i][j][k];
           }
         }
-        blockDate.push({"x": this.state.dataPredictionDatesFormatted[i], "y": (month * (24 * 7) / (indexes[1].length * (1 + indexes[2][1] - indexes[2][0])))**0.1});
+        blockDate.push({"x": this.state.dataPredictionDatesFormatted[i], "y": (month * (24 * 7)**3 / (indexes[1].length * (1 + indexes[2][1] - indexes[2][0])))**0.1});
       }
       for (k = 0; k < 24; k++) {
         month = 0.0;
@@ -261,33 +351,40 @@ export default class VisualizeComponent extends Component {
       dataPredictionSelectedDatesFormatted: formatDates,
       dataPredictionTime: allTime,
       dataPredictionDate: allDate,
-      dataPredictionDOW: allDOW,
-      showPredictions: true
-    });
+      dataPredictionDOW: allDOW
+    }, () => {console.log(this.state)});
   }
 
   changeCity(e) {
     this.setState({city: e.target.innerHTML, cityId: parseInt(e.target.id.split("-")[1])}, () => {
       this.getCityShapes();
-      this.getCityData();
+      this.getCityData("");
     })
   }
 
   selectBlock(e) {
-    this.setState({blockid: e});
+    this.setState({nextBlockid: e});
   }
 
   selectPlace(loc) {
+    console.log(loc);
     new Promise(resolve => axios({
-      url: be_url+"/cities",
+      url: be_url+"/city/"+this.state.cityId.toString()+"/location",
       method: 'GET',
       params: loc
     }).then(response => {
       resolve(response.data);
     })).then(result => {
-      this.setState({
-        blockid: result.blockid.toString()
-      });
+      if (result.error !== "NO_BLOCK") {
+        this.setState({
+          nextBlockid: result.blockid.toString(),
+          nextAddress: loc
+        });
+      } else {
+        this.setState({
+          nextAddress: loc
+        });
+      }
     });
   }
 
@@ -420,10 +517,10 @@ export default class VisualizeComponent extends Component {
       });
   }
 
-  getCityData() {
-    var params = {};
-    if (this.state.blockid !== "") {
-      params["blockid"] = this.state.blockid;
+  getCityData(loadtype) {
+    var params = {type: loadtype};
+    if (this.state.nextBlockid !== "") {
+      params["blockid"] = this.state.nextBlockid;
     }
     if (this.state.startdate !== "") {
       params["sdt"] = this.state.startdate;
@@ -460,19 +557,17 @@ export default class VisualizeComponent extends Component {
     if (params !== {}) {
       request.params = params;
     }
-    this.getDataJob(request);
-    this.setState({startLoading: true});
+    this.getDataJob(request, loadtype);
+    if (loadtype === "") {
+      this.setState({startLoading: true});
+    }
   }
 
-  getDataJob(request) {
+  getDataJob(request, loadtype) {
     new Promise((resolve) => axios(request)
       .then(function(response) {
         if (response.data.status === 'completed') {
           var result = JSON.parse(response.data.result);
-          const values = {};
-          result.other.forEach(e => {
-            values[e.id] = e.values;
-          });
           const keys = Object.keys(result.main);
           var blockid = "";
           for (var i = 0; i < keys.length; i++) {
@@ -481,17 +576,35 @@ export default class VisualizeComponent extends Component {
               break;
             }
           }
-          var data = {values: values, blockid: blockid};
-          data.date = [{id: "All", data: result.main.all.values_date}]
-          data.time = [{id: "All", data: result.main.all.values_time}]
-          data.dow = [{id: "All", data: result.main.all.values_dow}]
-          data.crime_all = result.main.all.values_type
-          data.locdesc_all = result.main.all.values_locdesc
-          if (blockid !== "") {
-            data.date.push({id: blockid.toString(), data: result.main[blockid].values_date})
-            data.time.push({id: blockid.toString(), data: result.main[blockid].values_time})
-            data.dow.push({id: blockid.toString(), data: result.main[blockid].values_dow})
+          var data = {blockid: blockid};
+          if (loadtype === "") {
+            const values = {};
+            result.other.forEach(e => {
+              values[e.id] = e.values;
+            });
+            data.values = values;
+            data.date = [{id: "All", data: result.main.all.values_date}]
+            if (blockid !== "") {
+              data.date.push({id: blockid.toString(), data: result.main[blockid].values_date})
+            }
+            data.timeline = result.timeline;
+          } else if (loadtype === "time") {
+            data.time = [{id: "All", data: result.main.all.values_time}]
+            if (blockid !== "") {
+              data.time.push({id: blockid.toString(), data: result.main[blockid].values_time})
+            }
+          } else if (loadtype === "dow") {
+            data.dow = [{id: "All", data: result.main.all.values_dow}]
+            if (blockid !== "") {
+              data.dow.push({id: blockid.toString(), data: result.main[blockid].values_dow})
+            }
+          } else if (loadtype === "crimeall") {
+            data.crime_all = result.main.all.values_type
+          } else if (loadtype === "crimeblock" && blockid !== "") {
             data.crime_block = result.main[blockid].values_type
+          } else if (loadtype === "locall") {
+            data.locdesc_all = result.main.all.values_locdesc
+          } else if (loadtype === "locblock" && blockid !== "") {
             data.locdesc_block = result.main[blockid].values_locdesc
           }
           resolve({status: "completed", data: data});
@@ -502,60 +615,99 @@ export default class VisualizeComponent extends Component {
       })
   ).delay(5000).then(result => {
     if (result.status === "pending") {
-      this.getDataJob(result.data);
+      this.getDataJob(result.data, loadtype);
     } else {
-      this.setState({
-        dataMap: result.data.values, 
-        dataDate: result.data.date,
-        dataTime: result.data.time,
-        dataBlockId: result.data.blockid,
-        dataDOTW: result.data.dow,
-        dataCrimeTypesAll: result.data.crime_all,
-        dataCrimeTypesBlock: result.data.crime_block,
-        dataLocDescAll: result.data.locdesc_all,
-        dataLocDescBlock: result.data.locdesc_block,
-        finishLoading: true
-      });
+      if (loadtype === "") {
+        this.setState({
+          dataMap: result.data.values,
+          dataTimeline: result.data.timeline,
+          dataDate: result.data.date,
+          blockid: result.data.blockid,
+          finishLoading: true
+        }, () => (this.state.dataPredictionAll.length > 0 ? this.showPredictions() : null));
+      } else if (loadtype === "time") {
+        this.setState({
+          dataTime: result.data.time,
+          blockid: result.data.blockid,
+          timeDataLoaded: true
+        }, () => (this.state.dataPredictionAll.length > 0 ? this.showPredictions() : null));
+      } else if (loadtype === "dow") {
+        this.setState({
+          dataDOTW: result.data.dow,
+          blockid: result.data.blockid,
+          dowDataLoaded: true
+        }, () => (this.state.dataPredictionAll.length > 0 ? this.showPredictions() : null));
+      } else if (loadtype === "crimeall") {
+        this.setState({
+          dataCrimeTypesAll: result.data.crime_all,
+          blockid: result.data.blockid,
+          crimeAllDataLoaded: true
+        }, () => (this.state.dataPredictionAll.length > 0 ? this.showPredictions() : null));
+      } else if (loadtype === "crimeblock" && result.data.blockid !== "") {
+        this.setState({
+          dataCrimeTypesBlock: result.data.crime_block,
+          blockid: result.data.blockid,
+          crimeBlockDataLoaded: true
+        }, () => (this.state.dataPredictionAll.length > 0 ? this.showPredictions() : null));
+      } else if (loadtype === "locall") {
+        this.setState({
+          dataLocDescAll: result.data.locdesc_all,
+          blockid: result.data.blockid,
+          locAllDataLoaded: true
+        }, () => (this.state.dataPredictionAll.length > 0 ? this.showPredictions() : null));
+      } else if (loadtype === "locblock" && result.data.blockid !== "") {
+        this.setState({
+          dataLocDescBlock: result.data.locdesc_block,
+          blockid: result.data.blockid,
+          locBlockDataLoaded: true
+        }, () => (this.state.dataPredictionAll.length > 0 ? this.showPredictions() : null));
+      }
     }
   })}
 
   paramsFormSubmit() {
     var dotw = []
-    if (this.formDowM.current.checked) {
+    if (this.state.formDowM) {
       dotw.push("0");
     }
-    if (this.formDowTu.current.checked) {
+    if (this.state.formDowTu) {
       dotw.push("1");
     }
-    if (this.formDowW.current.checked) {
+    if (this.state.formDowW) {
       dotw.push("2");
     }
-    if (this.formDowTh.current.checked) {
+    if (this.state.formDowTh) {
       dotw.push("3");
     }
-    if (this.formDowF.current.checked) {
+    if (this.state.formDowF) {
       dotw.push("4");
     }
-    if (this.formDowSa.current.checked) {
+    if (this.state.formDowSa) {
       dotw.push("5");
     }
-    if (this.formDowSu.current.checked) {
+    if (this.state.formDowSu) {
       dotw.push("6");
     }
-    var stimes = this.formDateStart.current.value.split("-");
-    var etimes = this.formDateEnd.current.value.split("-");
+    var stimes = this.state.formDateStart.split("-");
+    var etimes = this.state.formDateEnd.split("-");
     this.setState({
       startdate: [stimes[1], stimes[2], stimes[0]].join("/"),
       enddate: [etimes[1], etimes[2], etimes[0]].join("/"),
-      starttime: this.formTimeStart.current.value,
-      endtime: this.formTimeEnd.current.value,
+      starttime: this.state.formTimeStart,
+      endtime: this.state.formTimeEnd,
       dotw: dotw,
+      dataCrimeTypesAll: [],
+      dataCrimeTypesBlock: [],
+      dataLocDescAll: [],
+      dataLocDescBlock: [],
+      dataTime: [],
+      dataDOTW: [],
       showPredictions: false
-    }, () => {this.getCityData(); this.showPredictions()});
+    }, () => {this.getCityData("")});
   }
   
   render() {
-    console.log(this.state.dataPredictionDate);
+    /*global google*/
     var dow = {
       0: "Mo",
       1: "Tu",
@@ -565,43 +717,212 @@ export default class VisualizeComponent extends Component {
       5: "Sa",
       6: "Su"
     };
+    var marks = {};
+    if (this.state.dataTimeline.length > 12) {
+      for (var i = 0; i < this.state.dataTimeline.length; i++) {
+        if (this.state.dataTimeline[i].month === 1) {
+          marks[i] = this.state.dataTimeline[i].month.toString()+"/"+this.state.dataTimeline[i].year.toString();
+        }
+      }
+    } else if (this.state.dataTimeline.length > 0) {
+      for (i = 0; i < this.state.dataTimeline.length; i+=3) {
+        marks[i/3] = this.state.dataTimeline[i].month.toString()+"/"+this.state.dataTimeline[i].year.toString();
+      }
+    }
+    
     return(
       <div>
         {this.state.startLoading ? <div className="row-nomarg overlay align-items-center text-center"><div className="col-12"><LoadingLogo style={{width: "300px", height: "300px"}} finish={this.state.finishLoading} endLoading={() => this.setState({startLoading: false, finishLoading: false})} /></div></div> : null}
         <div className="col-md-10 offset-1">
-          <Search city={this.state.city} cities={this.state.cities} selectPlace={this.selectBlockByAddress} />
-          <div className="row"><div style={{width: "100%", height: "80vh"}}><MapComponent height={"80vh"} blockid={this.state.blockid} baseloc={this.state.baseLoc} mapdata={this.state.dataMap} paths={this.state.paths} pathids={this.state.pathids} zipcodePaths={this.state.zipcodePaths} zipcodePathids={this.state.zipcodePathids} selectBlock={this.selectBlock} /></div></div>
+          <Search google={this.state.google} city={this.state.city} cities={this.state.cities} selectPlace={this.selectPlace} />
+          <div className="row"><div style={{width: "100%", height: "80vh"}}><MapComponent highMarkers={this.state.highLocations} lowMarkers={this.state.lowLocations} nextMarker={this.state.nextAddress} currMarker={this.state.address} google={this.state.google} showZipcodes={this.state.showZipcodes} dateindex={this.state.mapDate} height={"80vh"} blockid={this.state.blockid} nextblockid={this.state.nextBlockid} baseloc={this.state.baseLoc} mapdata={this.state.dataMap} paths={this.state.paths} pathids={this.state.pathids} zipcodePaths={this.state.zipcodePaths} zipcodePathids={this.state.zipcodePathids} showZipcodes={this.state.showZipcodes} selectBlock={this.selectBlock} /></div></div>
           <div className="row">
-            <div className="card date-data-chart"><div className="card-img-top" style={{width: "100%", height: "60vh"}}><Line axisbottom={{"format": "%m/%Y", "orient": "bottom", "tickSize": 5, "tickPadding": 5, "tickRotation": 0, "legend": "Month / Year", "legendOffset": 36, "legendPosition": "middle"}} xscale={{"type": "time", "format": "%m/%Y", "min": "auto", "max": "auto"}} yvalue={"Crime Severity"} data={(this.state.dataDate ? (this.state.showPredictions && this.state.dataPredictionDate.length > 0 ? this.state.dataDate.concat(this.state.dataPredictionDate) : this.state.dataDate) : [])} /></div><div className="card-body"><h5 className="card-title">Date (Month/Year)</h5></div></div>
-          </div>
-          <div className="row">
-            <div className="chart-card-columns">
-              <div className="card"><div className="card-img-top" style={{width: "100%", height: "60vh"}}><Sunburst data={(this.state.dataCrimeTypesAll ? this.state.dataCrimeTypesAll : {})} /></div><div className="card-body"><h5 className="card-title">Crime Types - All</h5></div></div>
-              {this.state.blockid !== "" ? <div className="card"><div className="card-img-top" style={{width: "100%", height: "60vh"}}><Sunburst data={(this.state.dataCrimeTypesBlock ? this.state.dataCrimeTypesBlock : {})} /></div><div className="card-body"><h5 className="card-title">{"Crime Types - Block "+this.state.blockid}</h5></div></div> : null}
-              <div className="card"><div className="card-img-top" style={{width: "100%", height: "60vh"}}><Sunburst data={(this.state.dataLocDescAll ? this.state.dataLocDescAll : {})} /></div><div className="card-body"><h5 className="card-title">Location Description - All</h5></div></div>
-              {this.state.blockid !== "" ? <div className="card"><div className="card-img-top" style={{width: "100%", height: "60vh"}}><Sunburst data={(this.state.dataLocDescBlock ? this.state.dataLocDescBlock : {})} /></div><div className="card-body"><h5 className="card-title">{"Location Description - Block "+this.state.blockid}</h5></div></div> : null}
-              <div className="card"><div className="card-img-top" style={{width: "100%", height: "60vh"}}><Line axisbottom={{"format": d => (d%24 < 12 ? ((d+23)%12+1).toString()+' AM' : ((d+23)%12+1).toString()+' PM'), "orient": "bottom", "tickSize": 5, "tickPadding": 5, "tickRotation": 0, "legend": "Hour of Day", "legendOffset": 36, "legendPosition": "middle", "tickValues": [0, 3, 6, 9, 12, 15, 18, 21, 24]}} xscale={{"type": "linear", "min": -1, "max": 25}} yvalue={"Crime Severity"} data={(this.state.dataTime ? this.state.dataTime : [])} /></div><div className="card-body"><h5 className="card-title">Hour of the Day</h5></div></div>
-              <div className="card"><div className="card-img-top" style={{width: "100%", height: "60vh"}}><Line axisbottom={{"format": d => dow[d%7], "orient": "bottom", "tickSize": 5, "tickPadding": 5, "tickRotation": 0, "legend": "Day of Week", "legendOffset": 36, "legendPosition": "middle", "tickValues": [0,1,2,3,4,5,6]}} xscale={{"type": "linear", "min": -1, "max": 7}} yvalue={"Crime Severity"} data={(this.state.dataDOTW ? this.state.dataDOTW : [])} /></div><div className="card-body"><h5 className="card-title">Day of the Week</h5></div></div>
+            <div className="card" style={{width: "90vw", padding: "2vw 5vw 1vw 5vw"}}>
+              <div className="card-body" style={{width: "100%"}}>
+                <h4>Current Map Date</h4>
+                <div style={{width: "90%", height: "100px"}}>
+                  <Slider step={1} min={0} max={this.state.dataTimeline.length-1}
+                    marks={marks}
+                    handleStyle={{borderColor: "#54f59a"}}
+                    trackStyle={{backgroundColor: "#e9e9e9"}}
+                    activeDotStyle={{borderColor: "#e9e9e9"}}
+                    onChange={(value) => {this.setState({mapDate: value})}}
+                  />
+                </div>
+                <h5 className="card-title">Date (Month/Year): {this.state.dataTimeline.length > 0 ? this.state.dataTimeline[parseInt(this.state.mapDate)].month.toString()+"/"+this.state.dataTimeline[parseInt(this.state.mapDate)].year.toString() : null}</h5>
+              </div>
             </div>
           </div>
           <div className="row">
-            <form>
-              <input ref={this.formDateStart} type="date" name="startdate" /><br />
-              <input ref={this.formDateEnd} type="date" name="enddate" /><br />
-              <input ref={this.formTimeStart} type="number" name="starttime" min="0" max="23" /><br />
-              <input ref={this.formTimeEnd} type="number" name="endtime" min="0" max="23" /><br />
-              <input ref={this.formDowM} type="checkbox" name="dotw" value="0" /> Monday<br />
-              <input ref={this.formDowTu} type="checkbox" name="dotw" value="1" /> Tuesday<br />
-              <input ref={this.formDowW} type="checkbox" name="dotw" value="2" /> Wednesday<br />
-              <input ref={this.formDowTh} type="checkbox" name="dotw" value="3" /> Thursday<br />
-              <input ref={this.formDowF} type="checkbox" name="dotw" value="4" /> Friday<br />
-              <input ref={this.formDowSa} type="checkbox" name="dotw" value="5" /> Saturday<br />
-              <input ref={this.formDowSu} type="checkbox" name="dotw" value="6" /> Sunday<br />
-            </form>
+            <div className="chart-card-columns" style={{width: "100%", height: "100vh"}}>
+              <div className="card" style={{height: "95%"}}>
+                <div className="card-body">
+                  <h4 className="card-title" style={{padding: "30px 0px 10px 0px"}}>Current Settings</h4>
+                  <div>
+                    <button className={"btn"+(this.state.dataPredictionAll.length > 0 ? (this.state.showPredictions ? " btn-primary" : " btn-outline-primary") : " btn-outline-primary")} style={{height: "50px", borderRadius: "25px", margin: "20px"}} type="button" onClick={() => {
+                        if (this.state.dataPredictionAll.length > 0) {
+                          this.setState((prevState) => ({showPredictions: !prevState.showPredictions}))
+                        } else {
+                          this.getPredictions()
+                        }
+                      }} >
+                      <ChartIcon /> Show Predictions
+                    </button>
+                    <button className={"btn"+(this.state.showZipcodes ? " btn-primary" : " btn-outline-primary")} style={{height: "50px", borderRadius: "25px", margin: "20px"}} type="button" onClick={() => {this.setState((prevState) => ({showZipcodes: !prevState.showZipcodes}))}}>
+                      <AreaIcon height="24px" width="24px" /> Show Zipcodes
+                    </button>
+                    <button className="btn btn-primary" style={{height: "50px", borderRadius: "25px", margin: "20px"}} type="button" onClick={() => this.downloadCityData()}>
+                      <DownloadIcon /> Download Incidents
+                    </button>
+                  </div>
+                  <h5>Date Range</h5>
+                  <h5>Day of the Week</h5>
+                  <h5>Hour of the Day</h5>
+                  <Range min={-1} max={25} step={1}
+                    disabled={true}
+                    handleStyle={[{borderColor: "#54f59a"},{borderColor: "#54f59a"}]}
+                    trackStyle={[{backgroundColor: (this.state.starttime > this.state.endtime+1 ? "#ffffff" : "#54f59a")}]}
+                    activeDotStyle={{borderColor: (this.state.starttime > this.state.endtime+1 ? "#e9e9e9" : "#54f59a")}}
+                    railStyle={{backgroundColor: (this.state.starttime > this.state.endtime+1 ? "#54f59a" : "#ffffff")}}
+                    dotStyle={{borderColor: (this.state.starttime > this.state.endtime+1 ? "#54f59a" : "#e9e9e9")}}
+                    marks={{
+                      0: "12 AM",
+                      3: "3 AM",
+                      6: "6 AM",
+                      9: "9 AM",
+                      12: "12 PM",
+                      15: "3 PM",
+                      18: "6 PM",
+                      21: "9 PM",
+                      24: "12 AM"
+                    }}
+                    value={(this.state.starttime > this.state.endtime+1 ? [this.state.endtime+1, this.state.starttime] : [this.state.starttime, this.state.endtime+1])}
+                  />
+                </div>
+              </div>
+              <div className="card" style={{height: "95%"}}>
+                <div className="card-body">
+                  <h4 className="card-title">Next Settings
+                    <button className="btn btn-primary" style={{height: "50px", borderRadius: "25px", margin: "20px"}} type="button" onClick={() => this.paramsFormSubmit()}>
+                      <ReloadIcon /> Get New Data
+                    </button>
+                  </h4>
+                  <h5>Date Range</h5>
+                  <div className="row">
+                    <div className="col-5">
+                      <h6>Start Date</h6>
+                      <input onChange={(e) => {this.setState({formDateStart: e.target.value})}} className="form-control" type="date" value="2000-01-01" name="startdate" />
+                    </div>
+                    <div className="col-5 offset-2">
+                      <h6>End Date</h6>
+                      <input onChange={(e) => {this.setState({formDateEnd: e.target.value})}} className="form-control" type="date" value="2030-01-01" name="enddate" />
+                    </div>
+                  </div>
+                  <h5>Day of the Week</h5>
+                  <div>
+                    <button className={"btn"+(this.state.formDowM ? " btn-primary" : " btn-outline-primary")} style={{height: "50px", width: "50px", borderRadius: "50%", margin: "20px"}} onClick={() => {this.setState((prevState) => ({formDowM: !prevState.formDowM}))}}>M</button>
+                    <button className={"btn"+(this.state.formDowTu ? " btn-primary" : " btn-outline-primary")} style={{height: "50px", width: "50px", borderRadius: "50%", margin: "20px"}} onClick={() => {this.setState((prevState) => ({formDowTu: !prevState.formDowTu}))}}>Tu</button>
+                    <button className={"btn"+(this.state.formDowW ? " btn-primary" : " btn-outline-primary")} style={{height: "50px", width: "50px", borderRadius: "50%", margin: "20px"}} onClick={() => {this.setState((prevState) => ({formDowW: !prevState.formDowW}))}}>W</button>
+                    <button className={"btn"+(this.state.formDowTh ? " btn-primary" : " btn-outline-primary")} style={{height: "50px", width: "50px", borderRadius: "50%", margin: "20px"}} onClick={() => {this.setState((prevState) => ({formDowTh: !prevState.formDowTh}))}}>Th</button>
+                    <button className={"btn"+(this.state.formDowF ? " btn-primary" : " btn-outline-primary")} style={{height: "50px", width: "50px", borderRadius: "50%", margin: "20px"}} onClick={() => {this.setState((prevState) => ({formDowF: !prevState.formDowF}))}}>F</button>
+                    <button className={"btn"+(this.state.formDowSa ? " btn-primary" : " btn-outline-primary")} style={{height: "50px", width: "50px", borderRadius: "50%", margin: "20px"}} onClick={() => {this.setState((prevState) => ({formDowSa: !prevState.formDowSa}))}}>Sa</button>
+                    <button className={"btn"+(this.state.formDowSu ? " btn-primary" : " btn-outline-primary")} style={{height: "50px", width: "50px", borderRadius: "50%", margin: "20px"}} onClick={() => {this.setState((prevState) => ({formDowSu: !prevState.formDowSu}))}}>Su</button>
+                  </div>
+                  <h5>Hour of the Day</h5>
+                  <div>
+                  <button onClick={() => {this.setState((prevState) => ({formTimeReverse: !prevState.formTimeReverse}))}} className={"btn"+(this.state.formTimeReverse ? " btn-primary" : " btn-outline-primary")}>Reverse Range</button>
+                  </div>
+                  <div style={{width: "90%", height: "100px", margin: "5%"}}>
+                    <Range min={0} max={24} step={1}
+                      onChange={(value) => {
+                        if (this.state.formTimeReverse) {
+                          this.setState({formTimeStart: value[1]-1, formTimeEnd: value[0]})
+                        } else {
+                          this.setState({formTimeStart: value[0], formTimeEnd: value[1]-1})
+                        }
+                      }}
+                      handleStyle={[{borderColor: "#54f59a"},{borderColor: "#54f59a"}]}
+                      trackStyle={[{backgroundColor: (this.state.formTimeReverse ? "#e9e9e9" : "#54f59a")}]}
+                      activeDotStyle={{borderColor: (this.state.formTimeReverse ? "#e9e9e9" : "#54f59a")}}
+                      railStyle={{backgroundColor: (this.state.formTimeReverse ? "#54f59a" : "#e9e9e9")}}
+                      dotStyle={{borderColor: (this.state.formTimeReverse ? "#54f59a" : "#e9e9e9")}}
+                      marks={{
+                        0: "12 AM",
+                        3: "3 AM",
+                        6: "6 AM",
+                        9: "9 AM",
+                        12: "12 PM",
+                        15: "3 PM",
+                        18: "6 PM",
+                        21: "9 PM",
+                        24: "12 AM"
+                      }}
+                      defaultValue={[0, 24]}
+                    />
+                  </div>
+                </div>
+              </div>
+            </div>
           </div>
-          <div className="row"><button className="btn btn-primary" type="button" onClick={() => this.paramsFormSubmit()}>Reload Data</button></div>
-          <div className="row"><button className="btn btn-primary" type="button" onClick={() => this.downloadCityData()}>Download</button></div>
-          <div className="row"><button className="btn btn-primary" type="button" onClick={() => this.getPredictions()}>Get Predictions</button></div>
+          <div className="row">
+            <div className="card date-data-chart"><div className="card-img-top" style={{width: "100%", height: "60vh"}}><Line axisbottom={{"format": "%m/%Y", "orient": "bottom", "tickSize": 5, "tickPadding": 5, "tickRotation": 0, "legend": "Month / Year", "legendOffset": 36, "legendPosition": "middle"}} xscale={{"type": "time", "format": "%m/%Y", "min": "auto", "max": "auto"}} yvalue={"Crime Severity"} data={(this.state.dataDate.length > 0 ? (this.state.showPredictions && this.state.dataPredictionDate.length > 0 ? this.state.dataDate.concat(this.state.dataPredictionDate) : this.state.dataDate) : [])} tooltip={slice => <div><h5>{(slice.id.getMonth()+1).toString()+"/"+(slice.id.getYear()+1900).toString()}</h5>{slice.data.map((e, i) => <p key={i}><span className="dot" style={{backgroundColor: e.serie.color}} />{e.serie.id}: {e.data.y.toFixed(3)}</p>)}</div>} /></div><div className="card-body"><h5 className="card-title">Date (Month/Year)</h5></div></div>
+          </div>
+          <div className="row">
+            <div className="chart-card-columns" style={{width: "100%"}}>
+              <div className="card">
+                <div className="card-img-top" style={{width: "100%", height: "60vh"}}>
+                  {this.state.crimeAllShow ? <Sunburst data={this.state.dataCrimeTypesAll} /> : <LoadButton loadData={() => {this.getCityData("crimeall")}} finishLoading={this.state.crimeAllDataLoaded} onFinish={() => this.setState({crimeAllDataLoaded: false, crimeAllShow: true})} logoStyle={{width: "200px", height: "200px"}} />}
+                </div>
+                <div className="card-body">
+                  <h5 className="card-title">Crime Types - All</h5>
+                </div>
+              </div>
+              {this.state.blockid !== "" ?
+                <div className="card">
+                  <div className="card-img-top" style={{width: "100%", height: "60vh"}}>
+                    {this.state.crimeBlockShow ? <Sunburst data={this.state.dataCrimeTypesBlock} /> : <LoadButton loadData={() => {this.getCityData("crimeblock")}} finishLoading={this.state.crimeBlockDataLoaded} onFinish={() => this.setState({crimeBlockDataLoaded: false, crimeBlockShow: true})} logoStyle={{width: "200px", height: "200px"}} />}
+                  </div>
+                  <div className="card-body">
+                    <h5 className="card-title">{"Crime Types - Block "+this.state.blockid}</h5>
+                  </div>
+                </div> : 
+              null}
+              <div className="card">
+                <div className="card-img-top" style={{width: "100%", height: "60vh"}}>
+                  {this.state.locAllShow ? <Sunburst data={this.state.dataLocDescAll} /> : <LoadButton loadData={() => {this.getCityData("locall")}} finishLoading={this.state.locAllDataLoaded} onFinish={() => this.setState({locAllDataLoaded: false, locAllShow: true})} logoStyle={{width: "200px", height: "200px"}} />}
+                </div>
+                <div className="card-body">
+                  <h5 className="card-title">Location Description - All</h5>
+                </div>
+              </div>
+              {this.state.blockid !== "" ?
+                <div className="card">
+                  <div className="card-img-top" style={{width: "100%", height: "60vh"}}>
+                    {this.state.locBlockShow ? <Sunburst data={this.state.dataLocDescBlock} /> : <LoadButton loadData={() => {this.getCityData("locblock")}} finishLoading={this.state.locBlockDataLoaded} onFinish={() => this.setState({locBlockDataLoaded: false, locBlockShow: true})} logoStyle={{width: "200px", height: "200px"}} />}
+                  </div>
+                  <div className="card-body">
+                    <h5 className="card-title">{"Location Description - Block "+this.state.blockid}</h5>
+                  </div>
+                </div> :
+              null}
+              <div className="card">
+                <div className="card-img-top" style={{width: "100%", height: "60vh"}}>
+                  {this.state.timeShow ? <Line axisbottom={{"format": d => (d%24< 12 ? ((d+23)%12+1).toString()+' AM' : ((d+23)%12+1).toString()+' PM'), "orient": "bottom", "tickSize": 5, "tickPadding": 5, "tickRotation": 0, "legend": "Hour of Day", "legendOffset": 36, "legendPosition": "middle", "tickValues": [0, 3, 6, 9, 12, 15, 18, 21, 24]}} xscale={{"type": "linear", "min": -1, "max": 25}} yvalue={"Crime Severity"} data={this.state.dataTime} tooltip={slice => <div><h5>{(slice.id%24 < 12 ? ((slice.id+23)%12+1).toString()+' AM' : ((slice.id+23)%12+1).toString()+' PM')}</h5>{slice.data.map((e, i) => <p key={i}><span className="dot" style={{backgroundColor: e.serie.color}} />{e.serie.id}: {e.data.y.toFixed(3)}</p>)}</div>} /> : <LoadButton loadData={() => {this.getCityData("time")}} finishLoading={this.state.timeDataLoaded} onFinish={() => this.setState({timeDataLoaded: false, timeShow: true})} logoStyle={{width: "200px", height: "200px"}} />}
+                </div>
+                <div className="card-body">
+                  <h5 className="card-title">Hour of the Day</h5>
+                </div>
+              </div>
+              <div className="card">
+                <div className="card-img-top" style={{width: "100%", height: "60vh"}}>
+                  {this.state.dowShow ? <Line axisbottom={{"format": d => dow[d%7], "orient": "bottom", "tickSize": 5, "tickPadding": 5, "tickRotation": 0, "legend": "Day of Week", "legendOffset": 36, "legendPosition": "middle", "tickValues": [0,1,2,3,4,5,6]}} xscale={{"type": "linear", "min": -1, "max": 7}} yvalue={"Crime Severity"} data={this.state.dataDOTW} tooltip={slice => <div><h5>{dow[(slice.id+7)%7]}</h5>{slice.data.map((e, i) => <p key={i}><span className="dot" style={{backgroundColor: e.serie.color}} />{e.serie.id}: {e.data.y.toFixed(3)}</p>)}</div>} /> : <LoadButton loadData={() => {this.getCityData("dow")}} finishLoading={this.state.dowDataLoaded} onFinish={() => this.setState({dowDataLoaded: false, dowShow: true})} logoStyle={{width: "200px", height: "200px"}} />}
+                </div>
+                <div className="card-body">
+                  <h5 className="card-title">Day of the Week</h5>
+                </div>
+              </div>
+            </div>
+          </div>
         </div>
       </div>
     );

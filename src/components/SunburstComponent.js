@@ -12,7 +12,7 @@ export default class Sunburst extends Component {
       <ResponsiveSunburst
         data={this.props.data}
         margin={{
-          "top": 40,
+          "top": 20,
           "right": 20,
           "bottom": 20,
           "left": 20

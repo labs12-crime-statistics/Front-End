@@ -2,9 +2,27 @@
 @import 'node_modules/bootstrap/scss/variables';
 @import 'node_modules/bootstrap/scss/mixins';
 
+@import url("https://fonts.googleapis.com/css?family=Roboto|Saira");
+
+body {
+  font-family: 'Roboto', sans-serif !important;
+}
+
+.nav-link {
+  font-family: 'Saira', sans-serif !important;
+}
+
+h4 {
+  font-family: 'Saira', sans-serif !important;
+}
+
+h5 {
+  font-family: 'Saira', sans-serif !important;
+}
+
 $theme-colors: (
-  "primary": #0074d9,
-  "danger": #ff4136
+  "primary": #54f59a,
+  "warning": #ff4136
 );
 
 .chart-card-columns {
@@ -47,6 +65,50 @@ $theme-colors: (
   background-color: rgba(255,255,255, 0.7);
   overflow-x: hidden;
   transition: 0.5s;
+}
+
+.dot {
+  height: 12px;
+  width: 12px;
+  border-radius: 50%;
+  display: inline-block;
+  margin-right: 10px;
+}
+
+.btn-primary {
+  color: #ffffff !important;
+}
+
+.btn-primary:hover {
+  color: #ffffff !important;
+}
+
+.btn-primary:active {
+  color: #ffffff !important;
+}
+
+.btn-primary svg {
+  fill: #ffffff;
+}
+
+.btn-outline-primary {
+  color: #54f59a !important;
+}
+
+.btn-outline-primary:hover {
+  color: #ffffff !important;
+}
+
+.btn-outline-primary:active {
+  color: #ffffff !important;
+}
+
+.btn-outline-primary svg {
+  fill: #54f59a;
+}
+
+.btn-outline-primary:hover svg {
+  fill: #ffffff;
 }
 
 @import 'node_modules/bootstrap/scss/bootstrap';
