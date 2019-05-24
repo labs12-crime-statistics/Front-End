@@ -134,9 +134,9 @@ export default class QuestionnaireComponent extends Component {
     if (this.state.cityid) {params.push("cityid="+this.state.cityid.toString())}
     if (this.state.blockid) {params.push("blockid="+this.state.blockid.toString())}
     if (this.state.dow) {params.push("dotw="+this.state.dow.map(x => x.toString()).join(","))}
-    if (this.state.crimevio) {params.push("crimevio="+this.state.crimevio.map(x => crimeviodict[x]).join(","))}
-    if (this.state.crimeppo) {params.push("crimeppo="+this.state.crimeppo.map(x => crimeppodict[x]).join(","))}
-    if (this.state.crimeloc) {params.push("crimeloc="+this.state.crimeloc.map(x => crimelocdict[x]).join(","))}
+    // if (this.state.crimevio) {params.push("crimevio="+this.state.crimevio.map(x => crimeviodict[x]).join(","))}
+    // if (this.state.crimeppo) {params.push("crimeppo="+this.state.crimeppo.map(x => crimeppodict[x]).join(","))}
+    // if (this.state.crimeloc) {params.push("crimeloc="+this.state.crimeloc.map(x => crimelocdict[x]).join(","))}
     return(params.length > 0 ? "?"+params.join("&") : "")
   }
 
@@ -377,7 +377,7 @@ export default class QuestionnaireComponent extends Component {
           </div>
         </div>
         : null}
-        {this.state.questLevel >= 5 ?
+        {/* {this.state.questLevel >= 5 ?
         <div className="row">
           <div className="col-12">
             <div className={"row title-row"+(this.state.questLevel >= 5 ? " title-row-active" : "")}>
@@ -425,8 +425,8 @@ export default class QuestionnaireComponent extends Component {
             </div>
           </div>
         </div>
-        : null}
-        <div className="row"><button ref={(el) => { this.messagesEnd = el; }} className="btn btn-primary" onClick={() => {if (this.state.questLevel === 7) {this.getTips(); this.setState({submit: true})} else {this.setState((prevState) => ({questLevel: prevState.questLevel+1}), () => {this.messagesEnd.scrollIntoView({ behavior: "smooth" })})}}}><h4 style={{margin: "0px"}}>{this.state.questLevel < 7 ? "Next" : "Get My Tips"}</h4></button></div>
+        : null} */}
+        <div className="row"><button ref={(el) => { this.messagesEnd = el; }} className="btn btn-primary" onClick={() => {if (this.state.questLevel === 4) {this.getTips(); this.setState({submit: true})} else {this.setState((prevState) => ({questLevel: prevState.questLevel+1}), () => {this.messagesEnd.scrollIntoView({ behavior: "smooth" })})}}}><h4 style={{margin: "0px"}}>{this.state.questLevel < 4 ? "Next" : "Get My Tips"}</h4></button></div>
       </div>
     </div>;
     return(
