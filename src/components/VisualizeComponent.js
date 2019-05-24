@@ -328,7 +328,7 @@ export default class VisualizeComponent extends Component {
           month += this.state.dataPredictionAll[i][j][k];
         }
       }
-      allDate.push({"x": this.state.dataPredictionDatesFormatted[i], "y": (month * 24 * 7 / (1000.0 * indexes[1].length * (1 + indexes[2][1] - indexes[2][0])))});
+      allDate.push({"x": this.state.dataPredictionDatesFormatted[i], "y": (month * 24 * 31 / (1000.0 * indexes[1].length * (1 + indexes[2][1] - indexes[2][0])))});
     }
     for (k = 0; k < 24; k++) {
       month = 0.0;
@@ -337,7 +337,7 @@ export default class VisualizeComponent extends Component {
           month += this.state.dataPredictionAll[i][j][k];
         }
       }
-      allTime.push({"x": this.state.dataPredictionDatesFormatted[i], "y": (month * 24 * 7 / (1000.0 * indexes[1].length * 24))});
+      allTime.push({"x": k, "y": (month * 24 * 31 / (1000.0 * indexes[1].length * 24))});
     }
     for (j = 0; j < 7; j++) {
       month = 0.0;
@@ -346,7 +346,7 @@ export default class VisualizeComponent extends Component {
           month += this.state.dataPredictionAll[i][j][k];
         }
       }
-      allDOW.push({"x": this.state.dataPredictionDatesFormatted[i], "y": (month * 24 * 7 / (1000.0 * 7 * (1 + indexes[2][1] - indexes[2][0])))});
+      allDOW.push({"x": j, "y": (month * 24 * 31 / (1000.0 * 7 * (1 + indexes[2][1] - indexes[2][0])))});
     }
     var blockMap = {};
     for (var b in this.state.dataPredictionBlocks) {
@@ -370,7 +370,6 @@ export default class VisualizeComponent extends Component {
       var blockDate = [];
       var blockTime = [];
       var blockDOW = [];
-      console.log(blockid);
       for (i = indexes[0][0]; i < indexes[0][1] + 1; i++) {
         month = 0.0;
         for (j = 0; j < indexes[1].length; j++) {
@@ -378,7 +377,7 @@ export default class VisualizeComponent extends Component {
             month += this.state.dataPredictionBlocks[blockid][i][j][k];
           }
         }
-        blockDate.push({"x": this.state.dataPredictionDatesFormatted[i], "y": (month * 24 * 7 / (1000.0 * indexes[1].length * (1 + indexes[2][1] - indexes[2][0])))});
+        blockDate.push({"x": this.state.dataPredictionDatesFormatted[i], "y": (month * 24 * 31 / (1000.0 * indexes[1].length * (1 + indexes[2][1] - indexes[2][0])))});
       }
       for (k = 0; k < 24; k++) {
         month = 0.0;
@@ -387,7 +386,7 @@ export default class VisualizeComponent extends Component {
             month += this.state.dataPredictionBlocks[blockid][i][j][k];
           }
         }
-        blockTime.push({"x": this.state.dataPredictionDatesFormatted[i], "y": (month * 24 * 7 / (1000.0 * indexes[1].length * 24))});
+        blockTime.push({"x": k, "y": (month * 24 * 31 / (1000.0 * indexes[1].length * 24))});
       }
       for (j = 0; j < 7; j++) {
         month = 0.0;
@@ -396,7 +395,7 @@ export default class VisualizeComponent extends Component {
             month += this.state.dataPredictionBlocks[blockid][i][j][k];
           }
         }
-        blockDOW.push({"x": this.state.dataPredictionDatesFormatted[i], "y": (month * 24 * 7 / (1000.0 * 7 * (1 + indexes[2][1] - indexes[2][0])))});
+        blockDOW.push({"x": j, "y": (month * 24 * 31 / (1000.0 * 7 * (1 + indexes[2][1] - indexes[2][0])))});
       }
       allDate.push({id: "Pred : Block "+blockid.toString(), data: blockDate});
       allTime.push({id: "Pred : Block "+blockid.toString(), data: blockTime});
@@ -1210,7 +1209,7 @@ export default class VisualizeComponent extends Component {
           </div>
           <div className="row">
             <div className="card date-data-chart"><div className="card-img-top" style={{width: "100%", height: "60vh"}}>
-              <Line axisbottom={{"format": "%m/%Y", "orient": "bottom", "tickSize": 5, "tickPadding": 5, "tickRotation": 0, "legend": "Month / Year", "legendOffset": 36, "legendPosition": "middle"}} xscale={{"type": "time", "format": "%m/%Y", "min": "auto", "max": "auto"}} yvalue={"Average Crime Count / (1k Population * Year)"} data={(this.state.dataDate.length > 0 ? (this.state.showPredictions && this.state.dataPredictionDate.length > 0 ? this.state.dataDate.concat(this.state.dataPredictionDate) : this.state.dataDate) : [])} tooltip={slice => <div><h5>{(slice.id.getMonth()+1).toString()+"/"+(slice.id.getYear()+1900).toString()}</h5>{slice.data.map((e, i) => <p key={i}><span className="dot" style={{backgroundColor: e.serie.color}} />{e.serie.id}: {e.data.y.toFixed(3)}</p>)}</div>} />
+              <Line axisbottom={{"format": "%m/%Y", "orient": "bottom", "tickSize": 5, "tickPadding": 5, "tickRotation": 0, "legend": "Month / Year", "legendOffset": 36, "legendPosition": "middle"}} xscale={{"type": "time", "format": "%m/%Y", "min": "auto", "max": "auto"}} yvalue={"Average Crime Count / (1k Population * Month)"} data={(this.state.dataDate.length > 0 ? (this.state.showPredictions && this.state.dataPredictionDate.length > 0 ? this.state.dataDate.concat(this.state.dataPredictionDate) : this.state.dataDate) : [])} tooltip={slice => <div><h5>{(slice.id.getMonth()+1).toString()+"/"+(slice.id.getYear()+1900).toString()}</h5>{slice.data.map((e, i) => <p key={i}><span className="dot" style={{backgroundColor: e.serie.color}} />{e.serie.id}: {e.data.y.toFixed(3)}</p>)}</div>} />
             </div>
             <div className="card-body"><h5 className="card-title">Date (Month/Year)</h5></div>
           </div>
@@ -1227,18 +1226,10 @@ export default class VisualizeComponent extends Component {
               </div>
               <div className="card">
                 <div className="card-img-top" style={{width: "100%", height: "60vh"}}>
-                  {this.state.timeShow ? <Line axisbottom={{"format": d => (d%24< 12 ? ((d+23)%12+1).toString()+' AM' : ((d+23)%12+1).toString()+' PM'), "orient": "bottom", "tickSize": 5, "tickPadding": 5, "tickRotation": 0, "legend": "Hour of Day", "legendOffset": 36, "legendPosition": "middle", "tickValues": [0, 3, 6, 9, 12, 15, 18, 21, 24]}} xscale={{"type": "linear", "min": -1, "max": 25}} yvalue={"Average Crime Count / (1k Population * Year)"} data={this.state.dataTime.length > 0 ? this.state.showPredictions ? this.state.dataTime.concat(this.state.dataPredictionTime) : this.state.dataTime : []} tooltip={slice => <div><h5>{(slice.id%24 < 12 ? ((slice.id+23)%12+1).toString()+' AM' : ((slice.id+23)%12+1).toString()+' PM')}</h5>{slice.data.map((e, i) => <p key={i}><span className="dot" style={{backgroundColor: e.serie.color}} />{e.serie.id}: {e.data.y.toFixed(3)}</p>)}</div>} /> : <LoadButton loadData={() => {this.getCityData("timeall"); if (this.state.blockid !== "") {this.getCityData("time")}}} finishLoading={this.state.timeDataLoaded === 0} onFinish={() => this.setState({timeDataLoaded: 0, timeShow: true})} logoStyle={{width: "200px", height: "200px"}} />}
+                  {this.state.timeShow ? <Line axisbottom={{"format": d => (d%24< 12 ? ((d+23)%12+1).toString()+' AM' : ((d+23)%12+1).toString()+' PM'), "orient": "bottom", "tickSize": 5, "tickPadding": 5, "tickRotation": 0, "legend": "Hour of Day", "legendOffset": 36, "legendPosition": "middle", "tickValues": [0, 3, 6, 9, 12, 15, 18, 21, 24]}} xscale={{"type": "linear", "min": -1, "max": 25}} yvalue={"Average Crime Count / (1k Population * Month)"} data={this.state.dataTime.length > 0 ? this.state.showPredictions ? this.state.dataTime.concat(this.state.dataPredictionTime) : this.state.dataTime : []} tooltip={slice => <div><h5>{(slice.id%24 < 12 ? ((slice.id+23)%12+1).toString()+' AM' : ((slice.id+23)%12+1).toString()+' PM')}</h5>{slice.data.map((e, i) => <p key={i}><span className="dot" style={{backgroundColor: e.serie.color}} />{e.serie.id}: {e.data.y.toFixed(3)}</p>)}</div>} /> : <LoadButton loadData={() => {this.getCityData("timeall"); if (this.state.blockid !== "") {this.getCityData("time")}}} finishLoading={this.state.timeDataLoaded === 0} onFinish={() => this.setState({timeDataLoaded: 0, timeShow: true})} logoStyle={{width: "200px", height: "200px"}} />}
                 </div>
                 <div className="card-body">
                   <h5 className="card-title">Hour of the Day</h5>
-                </div>
-              </div>
-              <div className="card">
-                <div className="card-img-top" style={{width: "100%", height: "60vh"}}>
-                  {this.state.dowShow ? <Line axisbottom={{"format": d => dow[d%7], "orient": "bottom", "tickSize": 5, "tickPadding": 5, "tickRotation": 0, "legend": "Day of Week", "legendOffset": 36, "legendPosition": "middle", "tickValues": [0,1,2,3,4,5,6]}} xscale={{"type": "linear", "min": -1, "max": 7}} yvalue={"Average Crime Count / (1k Population * Year)"} data={this.state.dataDOTW.length > 0 ? this.state.showPredictions ? this.state.dataDOTW.concat(this.state.dataPredictionDOW) : this.state.dataDOTW : []} tooltip={slice => <div><h5>{dow[(slice.id+7)%7]}</h5>{slice.data.map((e, i) => <p key={i}><span className="dot" style={{backgroundColor: e.serie.color}} />{e.serie.id}: {e.data.y.toFixed(3)}</p>)}</div>} /> : <LoadButton loadData={() => {this.getCityData("dowall"); if (this.state.blockid !== "") {this.getCityData("dow")}}} finishLoading={this.state.dowDataLoaded === 0} onFinish={() => this.setState({dowDataLoaded: 0, dowShow: true})} logoStyle={{width: "200px", height: "200px"}} />}
-                </div>
-                <div className="card-body">
-                  <h5 className="card-title">Day of the Week</h5>
                 </div>
               </div>
               {this.state.blockid !== "" ?
@@ -1251,6 +1242,14 @@ export default class VisualizeComponent extends Component {
                   </div>
                 </div> :
               null}
+              <div className="card">
+                <div className="card-img-top" style={{width: "100%", height: "60vh"}}>
+                  {this.state.dowShow ? <Line axisbottom={{"format": d => dow[d%7], "orient": "bottom", "tickSize": 5, "tickPadding": 5, "tickRotation": 0, "legend": "Day of Week", "legendOffset": 36, "legendPosition": "middle", "tickValues": [0,1,2,3,4,5,6]}} xscale={{"type": "linear", "min": -1, "max": 7}} yvalue={"Average Crime Count / (1k Population * Month)"} data={this.state.dataDOTW.length > 0 ? this.state.showPredictions ? this.state.dataDOTW.concat(this.state.dataPredictionDOW) : this.state.dataDOTW : []} tooltip={slice => <div><h5>{dow[(slice.id+7)%7]}</h5>{slice.data.map((e, i) => <p key={i}><span className="dot" style={{backgroundColor: e.serie.color}} />{e.serie.id}: {e.data.y.toFixed(3)}</p>)}</div>} /> : <LoadButton loadData={() => {this.getCityData("dowall"); if (this.state.blockid !== "") {this.getCityData("dow")}}} finishLoading={this.state.dowDataLoaded === 0} onFinish={() => this.setState({dowDataLoaded: 0, dowShow: true})} logoStyle={{width: "200px", height: "200px"}} />}
+                </div>
+                <div className="card-body">
+                  <h5 className="card-title">Day of the Week</h5>
+                </div>
+              </div>
             </div>
           </div>
         </div>
