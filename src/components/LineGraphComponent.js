@@ -43,6 +43,7 @@ export default class Line extends Component {
 
     const DashedLine = ({ series, lineGenerator, xScale, yScale }) => {
       var paths = this.state.data.map(({ id, data }) => {
+        console.log(data);
         var splitId = id;
         var splits = splitId.split(" ");
         if (splits[splits.length-2] === "Block") {

@@ -134,9 +134,9 @@ export default class QuestionnaireComponent extends Component {
     if (this.state.cityid) {params.push("cityid="+this.state.cityid.toString())}
     if (this.state.blockid) {params.push("blockid="+this.state.blockid.toString())}
     if (this.state.dow) {params.push("dotw="+this.state.dow.map(x => x.toString()).join(","))}
-    if (this.state.crimevio) {params.push("crimevio="+this.state.crimevio.map(x => crimeviodict[x]).join(","))}
-    if (this.state.crimeppo) {params.push("crimeppo="+this.state.crimeppo.map(x => crimeppodict[x]).join(","))}
-    if (this.state.crimeloc) {params.push("crimeloc="+this.state.crimeloc.map(x => crimelocdict[x]).join(","))}
+    // if (this.state.crimevio) {params.push("crimevio="+this.state.crimevio.map(x => crimeviodict[x]).join(","))}
+    // if (this.state.crimeppo) {params.push("crimeppo="+this.state.crimeppo.map(x => crimeppodict[x]).join(","))}
+    // if (this.state.crimeloc) {params.push("crimeloc="+this.state.crimeloc.map(x => crimelocdict[x]).join(","))}
     return(params.length > 0 ? "?"+params.join("&") : "")
   }
 
@@ -159,29 +159,34 @@ export default class QuestionnaireComponent extends Component {
       if (result.status === "pending") {
         this.getTipJob(result.data);
       } else {
-        console.log(result);
-        var orderedDiff = [];
+        var dow = [];
         for (var i=0; i<result.data.diffDow.length; i++) {
           if (this.state.dow.indexOf(i) !== -1) {
-            orderedDiff.push({id: i, type: "dow", value: result.data.diffDow[i]})
+            dow.push({id: i, type: "dow", value: result.data.diffDow[i]})
           }
         }
+        dow.sort((a,b) => {return(a.value - b.value)}).reverse();
+        var time = [];
         for (i=0; i<result.data.diffHour.length; i++) {
           if (this.state.time.indexOf(Math.floor(i/6)) !== -1) {
-            orderedDiff.push({id: i, type: "hour", value: result.data.diffHour[i]})
+            time.push({id: i, type: "hour", value: result.data.diffHour[i]})
           }
         }
+        time.sort((a,b) => {return(a.value - b.value)}).reverse();
+        var month = [];
         for (i=0; i<result.data.diffMonth.length; i++) {
           if (this.state.months.indexOf(i) !== -1) {
-            orderedDiff.push({id: i, type: "month", value: result.data.diffMonth[i]})
+            month.push({id: i, type: "month", value: result.data.diffMonth[i]})
           }
         }
-        orderedDiff.sort((a,b) => {return(a.value - b.value)}).reverse();
+        month.sort((a,b) => {return(a.value - b.value)}).reverse();
         this.setState((prevState) => ({
           changeFuture: result.data.changeFuture,
           changePast: result.data.changePast,
           cityComp: result.data.cityComp,
-          orderedDiff: orderedDiff.slice(0,5),
+          dataDow: dow.slice(0,3),
+          dataTime: time.slice(0,3),
+          dataMonth: month.slice(0,3),
           finishLoading: true
         }));
       }
@@ -242,14 +247,26 @@ export default class QuestionnaireComponent extends Component {
               </h1>
               <p style={{marginLeft: "30px"}}>{(Math.abs(this.state.changeFuture) * 100.0).toFixed(2)} % {this.state.changeFuture < 0 ? "Decrease in Crime" : "Increase in Crime"}</p>
               <h1 className="display-6">
-                Predicted Safety of Block compared to City
+                Current Safety of Block compared to City
               </h1>
               <p style={{marginLeft: "30px"}}>{this.state.cityComp < -1.5 ? "Much More Safe" : this.state.cityComp < -0.5 ? "More Safe" : this.state.cityComp < 0.5 ? "About the Same" : this.state.cityComp < 1.5 ? "More Unsafe" : "Much More Unsafe"}</p>
               <h1 className="display-6">
-                Suggested Hours, Days of the Week, and Months to Avoid this Block
+                Suggested Hours to Avoid this Block
               </h1>
               <ul>
-                {this.state.orderedDiff.map(x => <li style={{marginLeft: "30px"}}>{valToString(x)}</li>)}
+                {this.state.dataTime.map(x => <li style={{marginLeft: "30px"}}>{valToString(x)}</li>)}
+              </ul>
+              <h1 className="display-6">
+                Suggested Days of the Week to Take Precaution in this Block
+              </h1>
+              <ul>
+                {this.state.dataDow.map(x => <li style={{marginLeft: "30px"}}>{valToString(x)}</li>)}
+              </ul>
+              <h1 className="display-6">
+              Suggested Months of the Week to Take Precaution in this Block
+              </h1>
+              <ul>
+                {this.state.dataMonth.map(x => <li style={{marginLeft: "30px"}}>{valToString(x)}</li>)}
               </ul>
             </div>
             <div>
@@ -377,7 +394,7 @@ export default class QuestionnaireComponent extends Component {
           </div>
         </div>
         : null}
-        {this.state.questLevel >= 5 ?
+        {/* {this.state.questLevel >= 5 ?
         <div className="row">
           <div className="col-12">
             <div className={"row title-row"+(this.state.questLevel >= 5 ? " title-row-active" : "")}>
@@ -425,8 +442,8 @@ export default class QuestionnaireComponent extends Component {
             </div>
           </div>
         </div>
-        : null}
-        <div className="row"><button ref={(el) => { this.messagesEnd = el; }} className="btn btn-primary" onClick={() => {if (this.state.questLevel === 7) {this.getTips(); this.setState({submit: true})} else {this.setState((prevState) => ({questLevel: prevState.questLevel+1}), () => {this.messagesEnd.scrollIntoView({ behavior: "smooth" })})}}}><h4 style={{margin: "0px"}}>{this.state.questLevel < 7 ? "Next" : "Get My Tips"}</h4></button></div>
+        : null} */}
+        <div className="row"><button ref={(el) => { this.messagesEnd = el; }} className="btn btn-primary" onClick={() => {if (this.state.questLevel === 4) {this.getTips(); this.setState({submit: true})} else {this.setState((prevState) => ({questLevel: prevState.questLevel+1}), () => {this.messagesEnd.scrollIntoView({ behavior: "smooth" })})}}}><h4 style={{margin: "0px"}}>{this.state.questLevel < 4 ? "Next" : "Get My Tips"}</h4></button></div>
       </div>
     </div>;
     return(
