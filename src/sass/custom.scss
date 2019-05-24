@@ -12,6 +12,18 @@ body {
   font-family: 'Saira', sans-serif !important;
 }
 
+h1 {
+  font-family: 'Saira', sans-serif !important;
+}
+
+h2 {
+  font-family: 'Saira', sans-serif !important;
+}
+
+h3 {
+  font-family: 'Saira', sans-serif !important;
+}
+
 h4 {
   font-family: 'Saira', sans-serif !important;
 }
@@ -101,6 +113,10 @@ $theme-colors: (
 
 .btn-outline-primary:active {
   color: #ffffff !important;
+}
+
+.btn-outline-primary:disabled {
+  color: #54f59a !important;
 }
 
 .btn-outline-primary svg {

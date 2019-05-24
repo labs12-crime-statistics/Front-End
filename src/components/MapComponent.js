@@ -45,92 +45,92 @@ export default class MapComponent extends Component {
         zoom: 12,
         styles: mapStyle
       });
-      var lMarkers = [];
-      var hMarkers = [];
-      for (var i = 0; i < 5; i++) {
-        var lMarker = new nextProps.google.maps.Marker({});
-        lMarker.setIcon({
-          path: markericon,
-          anchor: new nextProps.google.maps.Point(12,4),
-          fillColor: "#0000ff",
-          fillOpacity: 1,
-          strokeOpacity: 0,
-          scale: 2
-        });
-        lMarkers.push(lMarker);
+    //   var lMarkers = [];
+    //   var hMarkers = [];
+    //   for (var i = 0; i < 5; i++) {
+    //     var lMarker = new nextProps.google.maps.Marker({});
+    //     lMarker.setIcon({
+    //       path: markericon,
+    //       anchor: new nextProps.google.maps.Point(12,4),
+    //       fillColor: "#0000ff",
+    //       fillOpacity: 1,
+    //       strokeOpacity: 0,
+    //       scale: 2
+    //     });
+    //     lMarkers.push(lMarker);
         
-        var hMarker = new nextProps.google.maps.Marker({});
-        hMarker.setIcon({
-          path: markericon,
-          anchor: new nextProps.google.maps.Point(12,4),
-          fillColor: "#ff0000",
-          fillOpacity: 1,
-          strokeOpacity: 0,
-          scale: 2
-        });
-        hMarkers.push(hMarker);
-      }
-      var cMarker = new nextProps.google.maps.Marker({});
-      cMarker.setIcon({
-        path: markericon,
-        anchor: new nextProps.google.maps.Point(12,4),
-        fillColor: "#96f7c0",
-        fillOpacity: 1,
-        strokeOpacity: 0,
-        scale: 2
-      });
-      var nMarker = new nextProps.google.maps.Marker({});
-      nMarker.setIcon({
-        path: markericon,
-        anchor: new nextProps.google.maps.Point(12,4),
-        fillColor: "#96f7c0",
-        fillOpacity: 1,
-        strokeOpacity: 0,
-        scale: 2
-      });
-      this.setState({highMarkers: hMarkers, lowMarkers: lMarkers, currMarker: cMarker, nextMarker: nMarker},
-        () => {
-          if (nextProps.currMarker !== this.props.currMarker) {
-            if (nextProps.currMarker !== null) {
-              this.state.currMarker.setPosition(nextProps.currMarker);
-              this.state.nextMarker.setMap(this.map);
-            } else {
-              this.state.currMarker.setMap(null);
-            }
-          }
+    //     var hMarker = new nextProps.google.maps.Marker({});
+    //     hMarker.setIcon({
+    //       path: markericon,
+    //       anchor: new nextProps.google.maps.Point(12,4),
+    //       fillColor: "#ff0000",
+    //       fillOpacity: 1,
+    //       strokeOpacity: 0,
+    //       scale: 2
+    //     });
+    //     hMarkers.push(hMarker);
+    //   }
+    //   var cMarker = new nextProps.google.maps.Marker({});
+    //   cMarker.setIcon({
+    //     path: markericon,
+    //     anchor: new nextProps.google.maps.Point(12,4),
+    //     fillColor: "#96f7c0",
+    //     fillOpacity: 1,
+    //     strokeOpacity: 0,
+    //     scale: 2
+    //   });
+    //   var nMarker = new nextProps.google.maps.Marker({});
+    //   nMarker.setIcon({
+    //     path: markericon,
+    //     anchor: new nextProps.google.maps.Point(12,4),
+    //     fillColor: "#96f7c0",
+    //     fillOpacity: 1,
+    //     strokeOpacity: 0,
+    //     scale: 2
+    //   });
+    //   this.setState({highMarkers: hMarkers, lowMarkers: lMarkers, currMarker: cMarker, nextMarker: nMarker},
+    //     () => {
+    //       if (nextProps.currMarker !== this.props.currMarker) {
+    //         if (nextProps.currMarker !== null) {
+    //           this.state.currMarker.setPosition(nextProps.currMarker);
+    //           this.state.nextMarker.setMap(this.map);
+    //         } else {
+    //           this.state.currMarker.setMap(null);
+    //         }
+    //       }
       
-          if (nextProps.nextMarker !== this.props.nextMarker) {
-            if (nextProps.nextMarker !== null) {
-              this.state.nextMarker.setPosition(nextProps.nextMarker);
-              this.state.nextMarker.setMap(this.map);
-            } else {
-              this.state.nextMarker.setMap(null);
-            }
-          }
+    //       if (nextProps.nextMarker !== this.props.nextMarker) {
+    //         if (nextProps.nextMarker !== null) {
+    //           this.state.nextMarker.setPosition(nextProps.nextMarker);
+    //           this.state.nextMarker.setMap(this.map);
+    //         } else {
+    //           this.state.nextMarker.setMap(null);
+    //         }
+    //       }
       
-          if (nextProps.highMarkers !== this.props.highMarkers) {
-            for (var i = 0; i < 5; i++) {
-              if (i < nextProps.highMarkers.length-1) {
-                this.state.highMarkers[i].setPosition(nextProps.highMarkers[i]);
-                this.state.highMarkers[i].setMap(this.map);
-              } else {
-                this.state.highMarkers[i].setMap(null);
-              }
-            }
-          }
+    //       if (nextProps.highMarkers !== this.props.highMarkers) {
+    //         for (var i = 0; i < 5; i++) {
+    //           if (i < nextProps.highMarkers.length-1) {
+    //             this.state.highMarkers[i].setPosition(nextProps.highMarkers[i]);
+    //             this.state.highMarkers[i].setMap(this.map);
+    //           } else {
+    //             this.state.highMarkers[i].setMap(null);
+    //           }
+    //         }
+    //       }
       
-          if (nextProps.lowMarkers !== this.props.lowMarkers) {
-            for (i = 0; i < 5; i++) {
-              if (i < nextProps.lowMarkers.length-1) {
-                this.state.setPosition(nextProps.lowMarkers[i]);
-                this.state.lowMarkers[i].setMap(this.map);
-              } else {
-                this.state.lowMarkers[i].setMap(null);
-              }
-            }
-          }
-        }  
-      );
+    //       if (nextProps.lowMarkers !== this.props.lowMarkers) {
+    //         for (i = 0; i < 5; i++) {
+    //           if (i < nextProps.lowMarkers.length-1) {
+    //             this.state.setPosition(nextProps.lowMarkers[i]);
+    //             this.state.lowMarkers[i].setMap(this.map);
+    //           } else {
+    //             this.state.lowMarkers[i].setMap(null);
+    //           }
+    //         }
+    //       }
+    //     }  
+    //   );
     }
 
     if ((Object.keys(nextProps.mapdata).length > 0) && (nextProps.paths) && (nextProps.pathids) && (this.props !== nextProps)) {
@@ -170,7 +170,7 @@ export default class MapComponent extends Component {
         }
 
         var polygons = [];
-        for (i = 0; i < nextProps.paths.length; i++) {
+        for (var i = 0; i < nextProps.paths.length; i++) {
           if (nextProps.pathids[i] in nextProps.mapdata) {
             var poly = null;
             if (nextProps.pathids[i].toString() !== nextProps.blockid) {
