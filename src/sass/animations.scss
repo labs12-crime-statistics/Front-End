@@ -101,3 +101,43 @@
     opacity: 0.0;
   }
 }
+
+.title-row-active {
+  animation: title-drop 0.5s linear;
+  animation-fill-mode: forwards;
+  transform-box: fill-box;
+}
+
+@include keyframes(title-drop)
+{
+  from {
+    transform:
+      translateY(100px);
+    opacity: 0.0;
+  }
+  to {
+    transform:
+      translateY(0px);
+    opacity: 1.0
+  }
+}
+
+.body-row-active {
+  animation: body-drop 0.5s linear;
+  animation-fill-mode: forwards;
+  transform-box: fill-box;
+}
+
+@include keyframes(body-drop)
+{
+  from {
+    transform:
+      translateY(50px);
+    opacity: 0.0;
+  }
+  to {
+    transform:
+      translateY(0px);
+    opacity: 1.0
+  }
+}

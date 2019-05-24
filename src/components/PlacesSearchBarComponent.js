@@ -32,7 +32,7 @@ class Search extends Component {
 
   handleCitiesClick(e) {
     if (this.citiesDropdown.current.contains(e.target)) {
-      return;
+      this.props.selectCity(e.target.id.split("-")[1]);
     }
     this.setState({showCities: false});
   }
@@ -55,6 +55,7 @@ class Search extends Component {
   }
 
   handlePlaceDetails(place, status) {
+    console.log(place[0].geometry.location.toJSON());
     this.props.selectPlace(place[0].geometry.location.toJSON());
   }
 

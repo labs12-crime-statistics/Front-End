@@ -13,7 +13,7 @@ ReactDOM.render(
     <Router>
         <Navbar />
         <Route exact path="/" render={() => <HomeComponent />} />
-        <Route exact path="/map" render={() => <VisualizeComponent cityid={1} />} />
+        <Route exact path="/map" render={(props) => <VisualizeComponent {...props} cityid={1} />} />
         <Route exact path="/about" render={() => <AboutComponent />} />
     </Router>,
 document.getElementById('root'));
