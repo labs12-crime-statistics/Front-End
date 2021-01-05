@@ -5,7 +5,7 @@
   "dependencies": {
     "@nivo/line": "^0.56.2",
     "@nivo/sunburst": "^0.56.2",
-    "axios": "^0.18.0",
+    "axios": "^0.21.1",
     "bootstrap": "^4.3.1",
     "dotenv": "^7.0.0",
     "google-maps-react": "^2.0.2",
